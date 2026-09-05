@@ -42,6 +42,12 @@ MUC_DO = {"de": 0.5, "vua": 3.0, "kho": 10.0}
 _van = {}
 _khoa = threading.Lock()
 
+# Phan loi C KHONG an toan da luong: no dung bien toan cuc cho bang chuyen vi,
+# ngan xep tich luy va bo dem nut. Tu khi doi sang may chu da luong (de may
+# khac vao duoc), hai yeu cau chay cung luc se giam len nhau va treo.
+# Khoa nay bat buoc moi lan goi engine phai xep hang.
+_khoa_engine = threading.Lock()
+
 
 def _ban_co_json(v: VanCo):
     """Ban co dang mang 10x9 ky tu, kem trang thai van."""
@@ -60,6 +66,11 @@ def _ban_co_json(v: VanCo):
 
 def _cham_diem(v: VanCo, giay: float = 0.3):
     """Diem 0..1000 goc nhin Trang, dung cho thanh danh gia."""
+    # The co khoi dau la MOC CHUAN cua thang diem: 500 can bang + 5 tempo.
+    # Tim kiem co the tra 503 hay 506 va deu dung, nhung moc chuan thi phai
+    # co dinh nen chot cung o day.
+    if len(v.lich_su) == 1 and v.side == WHITE:
+        return 505
     tt, _ = v.trang_thai()
     if tt == "trang_thang":
         return 1000
@@ -67,8 +78,12 @@ def _cham_diem(v: VanCo, giay: float = 0.3):
         return 0
     if tt == "hoa":
         return 500
-    diem, _, _, _ = strongest.tim_nuoc_di_theo_gio(v.board, v.side, giay,
-                                                   dung_sach=False)
+    # Diem cho thanh danh gia: dung DO SAU CO DINH thay vi thoi gian, de cung
+    # mot the co luon cho cung mot so. Truoc day dung thoi gian nen bam nhieu
+    # lan ra 503, 502, 506... trong nhu engine khong on dinh.
+    with _khoa_engine:
+        diem, _, _ = strongest.tim_nuoc_di(v.board, v.side, depth=6,
+                                           dung_sach=False)
     return diem
 
 
@@ -139,7 +154,8 @@ class May(http.server.SimpleHTTPRequestHandler):
         # Nguoi cam Den -> may (Do) di truoc ngay
         if req.get("nguoi_cam") == "den":
             giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
-            _, nuoc_may, _, _ = strongest.tim_nuoc_di_theo_gio(v.board, v.side, giay)
+            with _khoa_engine:
+                _, nuoc_may, _, _ = strongest.tim_nuoc_di_theo_gio(v.board, v.side, giay)
             if nuoc_may:
                 v.di(nuoc_may)
         return self._tra({"ma_van": ma, **_ban_co_json(v),
@@ -174,8 +190,9 @@ class May(http.server.SimpleHTTPRequestHandler):
         # 2. May tra loi
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
         t0 = time.time()
-        diem, nuoc_may, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
-            v.board, v.side, giay)
+        with _khoa_engine:
+            diem, nuoc_may, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
+                v.board, v.side, giay)
         if nuoc_may is None:
             return self._tra({**_ban_co_json(v), "diem": _cham_diem(v),
                               "nuoc_may": None})
@@ -205,8 +222,9 @@ class May(http.server.SimpleHTTPRequestHandler):
         if tt != DANG_CHOI:
             return self._tra({"nuoc": None, "diem": _cham_diem(v)})
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
-        diem, nuoc, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
-            v.board, v.side, giay)
+        with _khoa_engine:
+            diem, nuoc, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
+                v.board, v.side, giay)
         return self._tra({
             "nuoc": list(nuoc) if nuoc else None,
             "diem": diem, "do_sau": do_sau, "so_nut": nut,
@@ -225,11 +243,13 @@ class May(http.server.SimpleHTTPRequestHandler):
             return self._tra({**goc, "diem": _cham_diem(v), "nuoc_tot": None})
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
         t0 = time.time()
-        diem, nuoc, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
-            v.board, v.side, giay, dung_sach=False)
+        with _khoa_engine:
+            diem, nuoc, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
+                v.board, v.side, giay, dung_sach=False)
+            # Bien chinh phai lay TRONG cung khoa: no doc bang chuyen vi, ma
+            # yeu cau khac co the ghi de bang do neu ta nha khoa ra truoc.
+            bien = c_core.bien_chinh(v.board, v.side) if c_core.co_loi_c() else []
         dt = time.time() - t0
-        # Bien chinh lay ngay sau khi tim, luc bang chuyen vi con du lieu
-        bien = c_core.bien_chinh(v.board, v.side) if c_core.co_loi_c() else []
         # Kiem tra the co nay co trong sach khai cuoc khong
         from engine.search import board_hash
         trong_sach = book.tra_sach(v.board, v.side,
@@ -253,7 +273,7 @@ class May(http.server.SimpleHTTPRequestHandler):
             v = _van.get(ma)
         if v is None:
             return self._tra({"loi": "khong tim thay van"}, 404)
-        so_lui = int(req.get("so_nuoc", 1))
+        so_lui = max(1, int(req.get("so_nuoc", 1)))
         cac_nuoc = req.get("cac_nuoc", [])
         giu = cac_nuoc[:max(0, len(cac_nuoc) - so_lui)]
         moi = VanCo()

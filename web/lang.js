@@ -2,6 +2,8 @@
 // phai sua mot cho, va de nguoi khac dong gop ban dich ma khong dung vao ma UI.
 const NGON_NGU = {
   vi: {
+    bi_an:'Quân bị ăn', giai_thich_muc:'Thời gian máy nghĩ mỗi nước',
+    khong_co:'chưa ăn quân nào',
     ten:'Tiếng Việt', tieu_de:'Bàn phân tích', phu:'thang 0–1000 cho Đỏ',
     can_bang:'Cân bằng', do_loi:'Đỏ ưu thế', den_loi:'Đen ưu thế',
     do_thang:'Đỏ thắng', den_thang:'Đen thắng',
@@ -23,6 +25,8 @@ const NGON_NGU = {
     chia_se:'Máy khác vào bằng', luot_cua:'Đến lượt',
   },
   en: {
+    bi_an:'Captured', giai_thich_muc:'Thinking time per move',
+    khong_co:'none captured yet',
     ten:'English', tieu_de:'Analysis board', phu:'0–1000 scale for Red',
     can_bang:'Balanced', do_loi:'Red is better', den_loi:'Black is better',
     do_thang:'Red wins', den_thang:'Black wins',
@@ -44,6 +48,8 @@ const NGON_NGU = {
     chia_se:'Other devices', luot_cua:'Turn',
   },
   zh: {
+    bi_an:'被吃棋子', giai_thich_muc:'每步思考时间',
+    khong_co:'尚未吃子',
     ten:'中文', tieu_de:'分析板', phu:'红方 0–1000 分制',
     can_bang:'均势', do_loi:'红方优势', den_loi:'黑方优势',
     do_thang:'红方胜', den_thang:'黑方胜',

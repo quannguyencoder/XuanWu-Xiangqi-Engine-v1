@@ -36,8 +36,10 @@
         background:radial-gradient(circle at 34% 30%,#fdf7ea,#e4d0a9 72%);
         box-shadow:0 2px 5px #0006}
   .quan:hover{transform:scale(1.06)}
-  .quan.do{color:var(--do);border:2px solid var(--do)}
-  .quan.den{color:var(--den);border:2px solid var(--den)}
+  .quan.do{color:var(--do);border:2.5px solid var(--do);
+           box-shadow:0 2px 6px #0007,inset 0 0 0 1.5px #fff8}
+  .quan.den{color:var(--den);border:2.5px solid var(--den);
+            box-shadow:0 2px 6px #0007,inset 0 0 0 1.5px #fff8}
   .quan.chon{box-shadow:0 0 0 3px #f1c40f,0 2px 8px #0008;transform:scale(1.06)}
   .quan.vua-di{box-shadow:0 0 0 3px #4a9eff,0 2px 8px #0008}
   .quan.se-bi-an{animation:rung .55s ease-in-out infinite}
@@ -90,6 +92,7 @@
       font-variant-numeric:tabular-nums;line-height:1.85}
   .ds div{display:flex;gap:10px}
   .ds span:first-child{color:var(--mo);width:26px;flex-shrink:0}
+  .ds span:not(:first-child){width:88px}
   .fen{font-family:ui-monospace,Menlo,monospace;font-size:11px;width:100%}
   .chia{color:var(--mo);font-size:11.5px;margin-top:9px;
         font-family:ui-monospace,Menlo,monospace}
@@ -166,6 +169,11 @@
     </div>
 
     <div class="the">
+      <h2 id="tBiAn">Quân bị ăn</h2>
+      <div id="biAn" style="font-size:22px;line-height:1.5;min-height:34px">—</div>
+    </div>
+
+    <div class="the">
       <h2 id="tNuocDaDi">Nước đã đi</h2>
       <div class="ds" id="ds"></div>
     </div>
@@ -174,17 +182,63 @@
 
 <script src="lang.js"></script>
 <script>
-const O=62, LE=34;
+const O=72, LE=44;   // o to hon + le rong cho so toa do
 const TEN={R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
            K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
 let van=null, banCo=null, chon=null, hopLe=[], vuaDi=null, dangCho=false;
 let benDi='trang', goiY=null, xoay=false, diemTruoc=505, phien=0, lichSu=[];
+let quanBiAn=[];        // ['p','R',...] theo thu tu bi an
+let banTruocNuoc=[];    // ban co truoc tung nuoc, de ghi ky hieu truyen thong
 let nn='vi', T=NGON_NGU.vi;
 
 const tuChoi=()=>document.getElementById('cheDo').value==='tu';
 const raMH=(r,c)=>xoay?[9-r,8-c]:[r,c];
 const tuMH=(r,c)=>xoay?[9-r,8-c]:[r,c];
 const kyHieu=m=>m?`${'abcdefghi'[m[1]]}${9-m[0]}${'abcdefghi'[m[3]]}${9-m[2]}`:'—';
+
+// --- Ghi nuoc di theo loi co tuong truyen thong ---
+// Cot duoc danh so tu PHIA MINH nhin sang: Do dem tu phai sang trai, Den dem
+// tu trai sang phai. Nen cung mot cot vat ly co hai so khac nhau tuy ben.
+// Huong: tien (len phia doi phuong), thoai (lui ve), binh (di ngang).
+// Quan di CHEO (Ma, Tuong, Si) luon ghi cot DICH; quan di thang ghi SO BUOC.
+const TEN_QUAN={
+  vi:{R:'Xe',H:'Mã',E:'Tượng',A:'Sĩ',K:'Tướng',C:'Pháo',P:'Tốt'},
+  en:{R:'R',H:'N',E:'B',A:'A',K:'K',C:'C',P:'P'},
+  zh:{R:'車',H:'馬',E:'象',A:'士',K:'將',C:'砲',P:'卒'},
+};
+const TEN_QUAN_DO={
+  vi:{R:'Xe',H:'Mã',E:'Tướng',A:'Sĩ',K:'Soái',C:'Pháo',P:'Binh'},
+  en:{R:'R',H:'N',E:'B',A:'A',K:'K',C:'C',P:'P'},
+  zh:{R:'俥',H:'傌',E:'相',A:'仕',K:'帥',C:'炮',P:'兵'},
+};
+const HUONG={vi:{t:'tấn',th:'thoái',b:'bình'},
+             en:{t:'+',th:'-',b:'='},
+             zh:{t:'进',th:'退',b:'平'}};
+const SO_ZH=['','一','二','三','四','五','六','七','八','九'];
+
+function ghiNuoc(mv, banTruoc){
+  if(!mv||!banTruoc) return kyHieu(mv);
+  const [r0,c0,r1,c1]=mv;
+  const p=banTruoc[r0][c0];
+  if(!p||p==='.') return kyHieu(mv);
+  const do_= p===p.toUpperCase();
+  const loai=p.toUpperCase();
+  const ten=(do_?TEN_QUAN_DO:TEN_QUAN)[nn][loai];
+  // So cot theo goc nhin cua ben di
+  const cot = x => do_ ? 9-x : x+1;
+  const so = n => nn==='zh' ? SO_ZH[n] : n;
+  const h = HUONG[nn];
+  let dong;
+  if(r0===r1){                                  // di ngang
+    dong = `${h.b}${so(cot(c1))}`;
+  } else {
+    const tien = do_ ? (r1<r0) : (r1>r0);       // Do tien la hang giam
+    const cheo = 'HEA'.includes(loai);
+    dong = (tien?h.t:h.th) + so(cheo ? cot(c1) : Math.abs(r1-r0));
+  }
+  return nn==='zh' ? `${ten}${so(cot(c0))}${dong}`
+                   : `${ten} ${cot(c0)} ${dong}`;
+}
 
 // --- Am thanh: tep da cat khoang lang, phat NGAY khi quan bat dau truot ---
 const TEP={}; const AM={di:.75,an:.95,chieu:.6,het:.5};
@@ -206,6 +260,7 @@ function datNN(m){
   document.getElementById('tNuocTot').textContent=T.nuoc_tot;
   document.getElementById('tVuaDi').textContent=T.nuoc_vua_di;
   document.getElementById('tNuocDaDi').textContent=T.nuoc_da_di;
+  document.getElementById('tBiAn').textContent=T.bi_an;
   document.getElementById('nhanSach').textContent=T.theo_sach;
   document.getElementById('bLui').textContent='↰ '+T.lui;
   document.getElementById('bMoi').textContent=T.van_moi;
@@ -217,13 +272,14 @@ function datNN(m){
     if(g) e.value=g;};
   dat('cheDo',[['may',T.choi_may],['tu',T.tu_choi]]);
   dat('mucDo',[['de',T.de],['vua',T.vua],['kho',T.kho]]);
+  document.getElementById('mucDo').title = T.giai_thich_muc;
   dat('benCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]]);
   localStorage.setItem('nn',m);
   if(banCo) veLai();
 }
 
 function veBan(){
-  const w=LE*2+O*8, h=LE*2+O*9;
+  const w=LE*2+O*8, h=LE*2+O*9+18;   // chua cho so cot o duoi
   let s=`<svg width="${w}" height="${h}">`;
   for(let r=0;r<10;r++) s+=`<line x1="${LE}" y1="${LE+r*O}" x2="${LE+8*O}"
     y2="${LE+r*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
@@ -238,6 +294,17 @@ function veBan(){
   const ch=(a,b)=>`<line x1="${LE+3*O}" y1="${LE+a*O}" x2="${LE+5*O}"
     y2="${LE+b*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
   s+=ch(0,2)+ch(2,0)+ch(7,9)+ch(9,7);
+  // So toa do: cot 1-9 o duoi, hang 1-10 ben trai (goc nhin nguoi choi)
+  for(let c=0;c<9;c++){
+    const nhan = xoay ? 9-c : c+1;
+    s+=`<text x="${LE+c*O}" y="${LE+9*O+26}" fill="var(--luoi)" font-size="13"
+        text-anchor="middle" opacity=".85">${nhan}</text>`;
+  }
+  for(let r=0;r<10;r++){
+    const nhan = xoay ? r+1 : 10-r;
+    s+=`<text x="${LE-16}" y="${LE+r*O+5}" fill="var(--luoi)" font-size="12"
+        text-anchor="middle" opacity=".7">${nhan}</text>`;
+  }
   s+=`<text x="${LE+1.9*O}" y="${LE+4.62*O}" fill="var(--luoi)" font-size="21"
       font-family="serif" opacity=".75">楚河</text>
       <text x="${LE+5.3*O}" y="${LE+4.62*O}" fill="var(--luoi)" font-size="21"
@@ -293,7 +360,7 @@ function veMuiTen(){
   const mau=benDi==='trang'?'#e74c3c':'#4a9eff';
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('class','mui-ten');
-  svg.setAttribute('width',LE*2+O*8); svg.setAttribute('height',LE*2+O*9);
+  svg.setAttribute('width',LE*2+O*8); svg.setAttribute('height',LE*2+O*9+18);
   svg.innerHTML=`<defs><marker id="dau" markerWidth="4" markerHeight="4"
     refX="2.2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/>
     </marker></defs><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"
@@ -303,7 +370,7 @@ function veMuiTen(){
 }
 
 function veLai(){ ve(); veMuiTen(); }
-function xoayBan(){ xoay=!xoay; veLai(); }
+function xoayBan(){ xoay=!xoay; veBan(); veLai(); }
 
 function bay(mv, xong){
   const b=document.getElementById('ban'), kt=O*.82;
@@ -415,7 +482,8 @@ async function vanMoi(){
   xoay=(ben==='den');
   const d=await goi('/api/van-moi',{nguoi_cam:ben,
     muc_do:document.getElementById('mucDo').value});
-  van=d.ma_van; chon=null; goiY=null; lichSu=[]; phien++;
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; quanBiAn=[]; banTruocNuoc=[]; phien++;
+  veBiAn();
   vuaDi=d.nuoc_may||null; diemTruoc=505;
   if(d.nuoc_may) lichSu.push(d.nuoc_may);
   document.getElementById('ds').innerHTML='';
@@ -428,10 +496,14 @@ async function vanMoi(){
 
 async function di(mv){
   dangCho=true; const benTruoc=benDi;
+  const anDuoc=banCo[mv[2]][mv[3]];
+  if(anDuoc!=='.') { quanBiAn.push(anDuoc); veBiAn(); }
   goiY=null; phien++; chon=null;
+  banTruocNuoc.push(banCo.map(h=>h.slice()));
   await new Promise(r=>bay(mv,r));
   vuaDi=mv; lichSu.push(mv);
-  document.getElementById('vuaDiTxt').textContent=kyHieu(mv);
+  document.getElementById('vuaDiTxt').textContent=
+    ghiNuoc(mv, banTruocNuoc[banTruocNuoc.length-1]);
   document.getElementById('ttVan').textContent = tuChoi()?T.dang_phan_tich:T.may_nghi;
   const d=await goi('/api/di',{ma_van:van,nuoc:mv,tu_choi:tuChoi(),
     muc_do:document.getElementById('mucDo').value});
@@ -444,6 +516,9 @@ async function di(mv){
       ` · <b style="color:${c.m}">${c.t}</b> <span style="color:var(--mo)">${c.l>=0?'+':''}${c.l}</span>`;
   }
   if(d.nuoc_may){
+    const [rr,cc]=[d.nuoc_may[2],d.nuoc_may[3]];
+    if(banCo[rr][cc]!=='.'){ quanBiAn.push(banCo[rr][cc]); veBiAn(); }
+    banTruocNuoc.push(banCo.map(h=>h.slice()));
     banCo=d.ban_co.map(h=>h.split(''));
     const [r0,c0,r1,c1]=d.nuoc_may;
     banCo[r0][c0]=banCo[r1][c1]; banCo[r1][c1]='.';
@@ -464,7 +539,7 @@ async function diGoiY(){
 
 async function lui(){
   if(!van||dangCho) return;
-  const bo = tuChoi()?1:2;
+  const bo = 1;      // luon lui MOT nuoc, bam nhieu lan de lui tiep
   const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu});
   lichSu=lichSu.slice(0,Math.max(0,lichSu.length-bo));
   vuaDi=lichSu.length?lichSu[lichSu.length-1]:null;
@@ -486,12 +561,25 @@ async function napFen(){
   if(tuChoi()) phanTich();
 }
 
+function veBiAn(){
+  const e=document.getElementById('biAn');
+  if(!quanBiAn.length){ e.textContent='—'; return; }
+  // Quan Do va quan Den tach hai hang cho de nhin ai mat gi
+  const nhom=q=>quanBiAn.filter(p=>q?p===p.toUpperCase():p===p.toLowerCase())
+    .map(p=>`<span style="color:${q?'#e74c3c':'#cfd3da'}">${
+      TEN[p.toUpperCase()][q?1:0]}</span>`).join(' ');
+  const d=nhom(true), n=nhom(false);
+  e.innerHTML=(d?`<div>${d}</div>`:'')+(n?`<div>${n}</div>`:'');
+}
+
 function veDs(){
   const ds=document.getElementById('ds'); ds.innerHTML='';
   for(let i=0;i<lichSu.length;i+=2){
     const d=document.createElement('div');
-    d.innerHTML=`<span>${i/2+1}.</span><span>${kyHieu(lichSu[i])}</span>
-      <span style="color:var(--mo)">${lichSu[i+1]?kyHieu(lichSu[i+1]):''}</span>`;
+    const g=(k)=>lichSu[k]?ghiNuoc(lichSu[k], banTruocNuoc[k]):'';
+    d.innerHTML=`<span>${i/2+1}.</span>
+      <span style="color:#e88">${g(i)}</span>
+      <span style="color:var(--mo)">${g(i+1)}</span>`;
     ds.appendChild(d);
   }
   ds.scrollTop=ds.scrollHeight;
