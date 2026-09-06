@@ -485,12 +485,12 @@ function ve(){
   });
 }
 
-// Khong ve mui ten nua: no de che quan co va gay roi mat. Nuoc tot nhat da
-// hien bang chu o o ben phai roi.
+// Mui ten CHI ve khi nguoi choi chu dong bam nut Goi y. Phan tich tu dong sau
+// moi nuoc khong ve, vi luc truoc mui ten hien lien tuc lam che quan va roi mat.
 function veMuiTen(){
   const b=document.getElementById('ban');
   b.querySelectorAll('.mui-ten').forEach(e=>e.remove());
-  return;
+  if(!goiY) return;
   const [a0,b0]=raMH(goiY[0],goiY[1]), [a1,b1]=raMH(goiY[2],goiY[3]);
   const x1=LE+b0*O, y1=LE+a0*O, x2=LE+b1*O, y2=LE+a1*O;
   const dx=x2-x1, dy=y2-y1, d=Math.hypot(dx,dy)||1, lui=O*.34;
@@ -502,8 +502,8 @@ function veMuiTen(){
   svg.innerHTML=`<defs><marker id="dau" markerWidth="4" markerHeight="4"
     refX="2.2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/>
     </marker></defs><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"
-    stroke="${mau}" stroke-width="7" stroke-linecap="round"
-    marker-end="url(#dau)" opacity=".75"/>`;
+    stroke="${mau}" stroke-width="6" stroke-linecap="round"
+    marker-end="url(#dau)" opacity=".62"/>`;
   b.appendChild(svg);
 }
 
@@ -634,7 +634,6 @@ function hienPhanTich(p){
            <b>${ghiNuoc(p.nuoc_tot, B)}</b> → ${T.diem_thanh}
            <b>${p.diem}</b></div>`
       : '';
-    goiY=p.nuoc_tot; veMuiTen();
   }
   document.getElementById('nhanSach').style.display = p.trong_sach?'inline-block':'none';
   const k=document.getElementById('bangKy');
@@ -773,7 +772,8 @@ async function xinGoiY(){
   const d=await goi('/api/goi-y',{ma_van:van,
     muc_do:document.getElementById('mucDo').value});
   if(p!==phien||!d||d.loi){ document.getElementById('nuocTot').textContent='—'; return; }
-  if(d.nuoc){ goiY=d.nuoc; veMuiTen();
+  if(d.nuoc){
+    goiY=d.nuoc; veMuiTen();          // chi bam nut moi ve mui ten
     document.getElementById('benTot').textContent=d.ben==='trang'?T.do_:T.den_;
     document.getElementById('nuocTot').textContent=
       ghiNuoc(d.nuoc, banCo); }
