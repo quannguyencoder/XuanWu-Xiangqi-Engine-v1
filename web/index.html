@@ -165,6 +165,10 @@
         <input class="fen" id="oFen" placeholder="FEN">
         <button onclick="napFen()" id="bFen" style="flex:0 0 90px">Nạp FEN</button>
       </div>
+      <div class="hang" style="margin-top:2px">
+        <button onclick="window.open('am-thanh.html','_blank')"
+                style="font-size:12.5px">🔊 Chọn âm thanh</button>
+      </div>
       <div class="chia" id="chiaSe"></div>
     </div>
 
@@ -230,20 +234,29 @@ function ghiNuoc(mv, banTruoc){
   const h = HUONG[nn];
   let dong;
   if(r0===r1){                                  // di ngang
-    dong = `${h.b}${so(cot(c1))}`;
+    dong = nn==='zh' ? `${h.b}${so(cot(c1))}` : `${h.b} ${so(cot(c1))}`;
   } else {
     const tien = do_ ? (r1<r0) : (r1>r0);       // Do tien la hang giam
     const cheo = 'HEA'.includes(loai);
-    dong = (tien?h.t:h.th) + so(cheo ? cot(c1) : Math.abs(r1-r0));
+    const n0 = so(cheo ? cot(c1) : Math.abs(r1-r0));
+    dong = (tien?h.t:h.th) + (nn==='zh' ? n0 : ' ' + n0);
   }
   return nn==='zh' ? `${ten}${so(cot(c0))}${dong}`
                    : `${ten} ${cot(c0)} ${dong}`;
 }
 
 // --- Am thanh: tep da cat khoang lang, phat NGAY khi quan bat dau truot ---
-const TEP={}; const AM={di:.75,an:.95,chieu:.6,het:.5};
-for(const [k,f] of Object.entries({di:'sound-move.wav',an:'sound-capture.wav',
-    chieu:'sound-check.wav',het:'sound-win.wav'})){
+const TEP={}; const AM={di:.75,an:.95,chieu:.6,het:.5,win:.6,thua:.6,hoa:.6,batdau:.5};
+// Am thanh da chon va cat san tu tep goc nguoi dung cung cap.
+// Ghi thang vao day thay vi de trong localStorage, de moi may va moi dia chi
+// deu nghe giong nhau, va ai tai du an ve cung co san.
+const MAC_DINH={di:'sound-move.wav',   an:'sound-capture.wav',
+                chieu:'sound-check.wav', batdau:'sound-start.wav',
+                win:'sound-win.wav',   thua:'sound-lose.wav',
+                hoa:'sound-start.wav', het:'sound-win.wav'};
+const gan=JSON.parse(localStorage.getItem('am_gan')||'{}');
+for(const [so,sk] of Object.entries(gan)) MAC_DINH[sk]=`am${so}.wav`;
+for(const [k,f] of Object.entries(MAC_DINH)){
   const a=new Audio(f); a.preload='auto'; a.load(); TEP[k]=a;
 }
 function amThanh(k){ try{ const a=TEP[k].cloneNode(); a.volume=AM[k]??.7;
@@ -431,7 +444,11 @@ function capNhat(d){
     t.innerHTML=`<b>${d.trang_thai==='hoa'?T.hoa:(tuChoi()
       ? (ai==='trang'?T.do_thang:T.den_thang)
       : (ai===minh?T.ban_thang:T.may_thang))}</b> <span style="color:var(--mo)">${d.ly_do||''}</span>`;
-    amThanh('het');
+    const minh2=document.getElementById('benCam').value;
+    const ai2={trang_thang:'trang',den_thang:'den'}[d.trang_thai];
+    amThanh(d.trang_thai==='hoa' ? (TEP.hoa?'hoa':'het')
+            : (tuChoi()||ai2===minh2 ? (TEP.win?'win':'het')
+                                     : (TEP.thua?'thua':'het')));
   }else{
     t.innerHTML = tuChoi()
       ? `${T.luot_cua} <b>${d.ben_di==='trang'?'Đỏ':'Đen'}</b>`
@@ -490,7 +507,7 @@ async function vanMoi(){
   document.getElementById('nuocTot').textContent='—';
   document.getElementById('pv').innerHTML='';
   document.getElementById('chamNuoc').textContent='';
-  capNhat(d); veDs();
+  capNhat(d); veDs(); amThanh('batdau');
   if(tuChoi()) phanTich();
 }
 
@@ -578,8 +595,8 @@ function veDs(){
     const d=document.createElement('div');
     const g=(k)=>lichSu[k]?ghiNuoc(lichSu[k], banTruocNuoc[k]):'';
     d.innerHTML=`<span>${i/2+1}.</span>
-      <span style="color:#e88">${g(i)}</span>
-      <span style="color:var(--mo)">${g(i+1)}</span>`;
+      <span style="color:#ff6b5a;font-weight:600">${g(i)}</span>
+      <span style="color:#dfe3ea">${g(i+1)}</span>`;
     ds.appendChild(d);
   }
   ds.scrollTop=ds.scrollHeight;

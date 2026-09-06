@@ -96,26 +96,42 @@ class VanCo:
         return DANG_CHOI, None
 
     def _ai_chieu_lien_tuc(self) -> Optional[str]:
-        """Trong chu ky lap vua roi, co ben nao chieu o MOI nuoc cua minh khong.
+        """Trong CHU KY LAP GAN NHAT, co ben nao chieu o moi nuoc cua minh khong.
 
-        Neu co thi ben do bi xu thua theo luat co tuong. Xet tu lan dau tien
-        gap the co hien tai toi bay gio.
+        Neu co thi ben do bi xu thua theo luat co tuong.
+
+        Hai diem de sai va da tung sai:
+
+        1. Phai xet tu lan GAN NHAT gap lai the co, khong phai lan DAU TIEN.
+           Neu lay tu lan dau thi ca quang dai giua hai lan bi gom vao, va mot
+           ben tinh co chieu vai nuoc roi mai sau the co moi lap se bi quy oan
+           la chieu lien tuc.
+
+        2. Neu CA HAI ben deu chieu suot chu ky thi khong ai thua - do la hoa.
+           Xu mot ben thua trong truong hop nay la sai.
+
+        Khi khong chac chan thi tra ve None (hoa). Xu nham mot ben thua tai hai
+        hon nhieu so voi xu nham thanh hoa.
         """
         k = _khoa(self.board, self.side)
-        dau = next(i for i, (x, _) in enumerate(self.lich_su) if x == k)
-        chuoi = self.lich_su[dau + 1:]
-        if not chuoi:
+        vi_tri = [i for i, (x, _) in enumerate(self.lich_su) if x == k]
+        if len(vi_tri) < 2:
             return None
-        # Nuoc thu i trong chuoi la cua ben nao: sau the co o vi tri dau, ben di
-        # la self.side neu (dau) cung chan le voi hien tai.
-        ben_dau = self.side if (len(self.lich_su) - 1 - dau) % 2 == 0 else \
-            (BLACK if self.side == WHITE else WHITE)
+        dau = vi_tri[-2]                    # lan gan nhat truoc lan hien tai
+        chuoi = self.lich_su[dau + 1:]
+        if len(chuoi) < 2:
+            return None
+
+        # The co o vi tri `dau` co CUNG ben di voi hien tai (khoa gom ca ben di),
+        # nen nuoc di ra khoi no la cua chinh self.side.
         chieu = {WHITE: [], BLACK: []}
-        ben = ben_dau
+        ben = self.side
         for _, co_chieu in chuoi:
             chieu[ben].append(co_chieu)
             ben = BLACK if ben == WHITE else WHITE
-        for b in (WHITE, BLACK):
-            if len(chieu[b]) >= 2 and all(chieu[b]):
-                return b
-        return None
+
+        thu_pham = [b for b in (WHITE, BLACK)
+                    if len(chieu[b]) >= 2 and all(chieu[b])]
+        if len(thu_pham) == 1:
+            return thu_pham[0]
+        return None                         # khong ai, hoac ca hai -> hoa
