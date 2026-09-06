@@ -2,6 +2,7 @@
 // phai sua mot cho, va de nguoi khac dong gop ban dich ma khong dung vao ma UI.
 const NGON_NGU = {
   vi: {
+    goi_y:'Gợi ý nước đi', ky_hieu:'ký hiệu', ten_quan:'Tên quân',
     luat:'Luật chơi', cach_di:'Cách đi quân', luat_dac_biet:'Luật đặc biệt',
     quan:'Quân', di_the_nao:'Đi thế nào',
     q_K:'Đi ngang dọc 1 ô, chỉ trong cung 9 ô. Không được đối mặt tướng địch qua cột trống.',
@@ -39,6 +40,7 @@ const NGON_NGU = {
     chia_se:'Máy khác vào bằng', luot_cua:'Đến lượt',
   },
   en: {
+    goi_y:'Show best move', ky_hieu:'notation', ten_quan:'Piece name',
     luat:'Rules', cach_di:'How pieces move', luat_dac_biet:'Special rules',
     quan:'Piece', di_the_nao:'Movement',
     q_K:'One step orthogonally, inside the 9-point palace only. May never face the enemy general down an open file.',
@@ -76,6 +78,7 @@ const NGON_NGU = {
     chia_se:'Other devices', luot_cua:'Turn',
   },
   zh: {
+    goi_y:'提示着法', ky_hieu:'记号', ten_quan:'棋子名称',
     luat:'规则', cach_di:'棋子走法', luat_dac_biet:'特殊规则',
     quan:'棋子', di_the_nao:'走法',
     q_K:'在九宫内直行一步。不得与对方将帅在同一直线上照面。',

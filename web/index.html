@@ -110,7 +110,10 @@
   .bieu.d{color:var(--do);border:2.5px solid var(--do)}
   .bieu.n{color:var(--den);border:2.5px solid var(--den)}
   .mo-ta b{display:block;margin-bottom:2px;font-size:14px}
-  .mo-ta span{color:var(--mo);font-size:13px;line-height:1.55}
+  .mo-ta span{color:var(--mo);font-size:13px;line-height:1.55;display:block}
+  .mo-ta .kh{font-size:11.5px;margin-bottom:4px;color:#7a8090}
+  .mo-ta code{background:#2b3038;padding:1px 6px;border-radius:4px;color:#dfe3ea;
+              font-family:ui-monospace,Menlo,monospace}
   .ds-luat{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
            gap:9px}
   .y{background:var(--the);border:1px solid var(--vien);border-radius:9px;
@@ -179,7 +182,7 @@
         <button onclick="xoayBan()" id="bXoay">⇅ Xoay</button>
       </div>
       <div class="hang">
-        <button onclick="diGoiY()" id="bGoiY">▶ Đi nước gợi ý</button>
+        <button onclick="xinGoiY()" id="bGoiY">💡 Gợi ý nước đi</button>
       </div>
       <div class="hang">
         <input class="fen" id="oFen" placeholder="FEN">
@@ -202,6 +205,7 @@
 
 <div class="luat">
   <h2 id="tCachDi">Cách đi quân</h2>
+  <p style="color:var(--mo);font-size:13px;margin:-4px 0 12px" id="tGhiChu"></p>
   <div class="bang-quan" id="bangQuan"></div>
   <h2 id="tLuatDacBiet">Luật đặc biệt</h2>
   <div class="ds-luat" id="dsLuat"></div>
@@ -228,15 +232,24 @@ const kyHieu=m=>m?`${'abcdefghi'[m[1]]}${9-m[0]}${'abcdefghi'[m[3]]}${9-m[2]}`:'
 // tu trai sang phai. Nen cung mot cot vat ly co hai so khac nhau tuy ben.
 // Huong: tien (len phia doi phuong), thoai (lui ve), binh (di ngang).
 // Quan di CHEO (Ma, Tuong, Si) luon ghi cot DICH; quan di thang ghi SO BUOC.
-const TEN_QUAN={
+// KY HIEU dung khi GHI NUOC DI (ngan gon), TEN DAY dung khi GIAI THICH.
+// Truoc day tron lam mot nen ban tieng Anh chi hien "R", "N" ma mat het ten.
+const TEN_QUAN={          // ky hieu ghi nuoc, ben Den
   vi:{R:'Xe',H:'Mã',E:'Tượng',A:'Sĩ',K:'Tướng',C:'Pháo',P:'Tốt'},
   en:{R:'R',H:'N',E:'B',A:'A',K:'K',C:'C',P:'P'},
   zh:{R:'車',H:'馬',E:'象',A:'士',K:'將',C:'砲',P:'卒'},
 };
-const TEN_QUAN_DO={
-  vi:{R:'Xe',H:'Mã',E:'Tướng',A:'Sĩ',K:'Soái',C:'Pháo',P:'Binh'},
+const TEN_QUAN_DO={       // ky hieu ghi nuoc, ben Do
+  vi:{R:'Xe',H:'Mã',E:'Tượng',A:'Sĩ',K:'Soái',C:'Pháo',P:'Binh'},
   en:{R:'R',H:'N',E:'B',A:'A',K:'K',C:'C',P:'P'},
   zh:{R:'俥',H:'傌',E:'相',A:'仕',K:'帥',C:'炮',P:'兵'},
+};
+const TEN_DAY={           // ten day du, dung o phan giai thich
+  vi:{R:'Xe',H:'Mã',E:'Tượng',A:'Sĩ',K:'Tướng / Soái',C:'Pháo',P:'Tốt / Binh'},
+  en:{R:'Chariot (Rook)',H:'Horse (Knight)',E:'Elephant',A:'Advisor',
+      K:'General',C:'Cannon',P:'Soldier (Pawn)'},
+  zh:{R:'車 / 俥',H:'馬 / 傌',E:'象 / 相',A:'士 / 仕',K:'將 / 帥',
+      C:'砲 / 炮',P:'卒 / 兵'},
 };
 const HUONG={vi:{t:'tấn',th:'thoái',b:'bình'},
              en:{t:'+',th:'-',b:'='},
@@ -306,7 +319,7 @@ function datNN(m){
   document.getElementById('bLui').textContent='↰ '+T.lui;
   document.getElementById('bMoi').textContent=T.van_moi;
   document.getElementById('bXoay').textContent='⇅ '+T.xoay;
-  document.getElementById('bGoiY').textContent='▶ '+T.di_goi_y;
+  document.getElementById('bGoiY').textContent='💡 '+T.goi_y;
   document.getElementById('bFen').textContent=T.nap_fen;
   const dat=(id,ds)=>{const e=document.getElementById(id), g=e.value;
     e.innerHTML=ds.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
@@ -324,11 +337,17 @@ function veLuat(){
   const thu = ['K','A','E','H','R','C','P'];
   document.getElementById('tCachDi').textContent = T.cach_di;
   document.getElementById('tLuatDacBiet').textContent = T.luat_dac_biet;
+  document.getElementById('tGhiChu').textContent =
+    nn==='vi' ? 'Ký hiệu dùng khi ghi nước đi — bên Đỏ trước, bên Đen sau.'
+  : nn==='en' ? 'Notation used when recording moves — Red first, Black second.'
+              : '记录着法时使用的记号 — 先红方，后黑方。';
   document.getElementById('bangQuan').innerHTML = thu.map(k=>`
     <div class="dong-quan">
       <div class="bieu d">${TEN[k][1]}</div>
       <div class="bieu n">${TEN[k][0]}</div>
-      <div class="mo-ta"><b>${TEN_QUAN_DO[nn][k]} / ${TEN_QUAN[nn][k]}</b>
+      <div class="mo-ta"><b>${TEN_DAY[nn][k]}</b>
+        <span class="kh">${T.ky_hieu}: <code>${TEN_QUAN_DO[nn][k]}</code> /
+          <code>${TEN_QUAN[nn][k]}</code></span>
         <span>${T['q_'+k]}</span></div>
     </div>`).join('');
   document.getElementById('dsLuat').innerHTML =
@@ -594,10 +613,19 @@ async function di(mv){
   if(tuChoi()&&d.trang_thai==='dang_choi') phanTich();
 }
 
-async function diGoiY(){
-  if(!goiY||dangCho) return;
-  const mv=goiY;
-  if(hopLe.some(m=>m.join()===mv.join())) di(mv);
+// Chi VE MUI TEN goi y, khong tu di - nguoi choi tu quyet dinh co theo hay khong
+async function xinGoiY(){
+  if(!van||dangCho) return;
+  const p=++phien;
+  document.getElementById('nuocTot').textContent='…';
+  const d=await goi('/api/goi-y',{ma_van:van,
+    muc_do:document.getElementById('mucDo').value});
+  if(p!==phien) return;
+  if(d.nuoc){ goiY=d.nuoc; veMuiTen();
+    document.getElementById('benTot').textContent=d.ben==='trang'?'Đỏ':'Đen';
+    document.getElementById('nuocTot').textContent=
+      ghiNuoc(d.nuoc, banCo); }
+  if(d.diem!==undefined) thanh(d.diem);
 }
 
 async function lui(){
