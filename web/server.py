@@ -240,12 +240,6 @@ class May(http.server.SimpleHTTPRequestHandler):
                               "diem_nuoc_nguoi": d, "nuoc_may": None})
 
         # 2. May tra loi
-        # The co khoi dau: chot 505, khong de tim kiem ghi de moc chuan
-        if len(v.lich_su) == 1 and v.side == WHITE:
-            return self._tra({**goc, "diem": 505, "diem_tinh": 505,
-                              "nuoc_tot": None, "bien_chinh": [],
-                              "do_sau": 0, "so_nut": 0, "giay": 0,
-                              "nut_moi_giay": 0, "trong_sach": True})
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
         t0 = time.time()
         with _khoa_engine:
@@ -313,6 +307,12 @@ class May(http.server.SimpleHTTPRequestHandler):
         from engine.search import board_hash
         trong_sach = book.tra_sach(v.board, v.side,
                                    board_hash(v.board, v.side)) is not None
+        # The co khoi dau la MOC CHUAN cua thang diem (500 can bang + 5 tempo).
+        # Tim kiem tra 496 hay 503 deu dung, nhung moc chuan thi phai co dinh.
+        # Chi ghi de rieng truong diem, van giu nguyen phan tich de o "nuoc tot
+        # nhat" khong bi trong.
+        if len(v.lich_su) == 1 and v.side == WHITE:
+            diem = 505
         return self._tra({
             **goc,
             "diem": diem,
