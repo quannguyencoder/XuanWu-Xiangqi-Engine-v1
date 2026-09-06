@@ -2,6 +2,11 @@
 // phai sua mot cho, va de nguoi khac dong gop ban dich ma khong dung vao ma UI.
 const NGON_NGU = {
   vi: {
+    do_:'Đỏ', den_:'Đen', chua_di:'chưa đi',
+    l6:'Sĩ và Tướng không được rời cung 9 ô ở giữa hàng cuối.',
+    l7:'Tốt chưa qua sông chỉ tiến thẳng, không đi ngang và không lùi.',
+    l8:'Pháo di chuyển như Xe nhưng ăn quân thì bắt buộc phải có đúng một quân làm ngòi ở giữa.',
+    l9:'Không có nhập thành, không có bắt tốt qua đường, không có phong cấp như cờ vua.',
     goi_y:'Gợi ý nước đi', ky_hieu:'chữ trên quân', ghi_nuoc:'ghi nước đi', ten_quan:'Tên quân',
     luat:'Luật chơi', cach_di:'Cách đi quân', luat_dac_biet:'Luật đặc biệt',
     quan:'Quân', di_the_nao:'Đi thế nào',
@@ -40,6 +45,11 @@ const NGON_NGU = {
     chia_se:'Máy khác vào bằng', luot_cua:'Đến lượt',
   },
   en: {
+    do_:'Red', den_:'Black', chua_di:'no move yet',
+    l6:'Advisors and the General may never leave the 9-point palace.',
+    l7:'A soldier before the river moves straight forward only — no sideways, no retreat.',
+    l8:'A cannon moves like a chariot, but capturing requires exactly one piece as a screen.',
+    l9:'There is no castling, no en passant and no promotion as in chess.',
     goi_y:'Show best move', ky_hieu:'character on piece', ghi_nuoc:'move notation', ten_quan:'Piece name',
     luat:'Rules', cach_di:'How pieces move', luat_dac_biet:'Special rules',
     quan:'Piece', di_the_nao:'Movement',
@@ -78,6 +88,11 @@ const NGON_NGU = {
     chia_se:'Other devices', luot_cua:'Turn',
   },
   zh: {
+    do_:'红', den_:'黑', chua_di:'尚未走子',
+    l6:'士和将帅不得离开九宫。',
+    l7:'未过河的兵卒只能直进，不能横走，不能后退。',
+    l8:'炮的走法同车，但吃子必须隔一个棋子作炮架。',
+    l9:'没有王车易位、吃过路兵和升变。',
     goi_y:'提示着法', ky_hieu:'棋子上的字', ghi_nuoc:'着法记号', ten_quan:'棋子名称',
     luat:'规则', cach_di:'棋子走法', luat_dac_biet:'特殊规则',
     quan:'棋子', di_the_nao:'走法',
