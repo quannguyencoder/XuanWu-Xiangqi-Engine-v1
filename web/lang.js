@@ -2,6 +2,7 @@
 // phai sua mot cho, va de nguoi khac dong gop ban dich ma khong dung vao ma UI.
 const NGON_NGU = {
   vi: {
+    mui_ten:'Mũi tên', bat:'bật', tat:'tắt',
     cach_ghi:'Cách ghi nước đi', vd:'Ví dụ',
     g_tan:'tấn', g_thoai:'thoái', g_binh:'bình',
     g_tan_t:'Tiến về phía đối phương. Số đi sau là SỐ BƯỚC (quân đi thẳng) hoặc CỘT ĐÍCH (Mã, Tượng, Sĩ).',
@@ -54,6 +55,7 @@ const NGON_NGU = {
     chia_se:'Máy khác vào bằng', luot_cua:'Đến lượt',
   },
   en: {
+    mui_ten:'Arrow', bat:'on', tat:'off',
     cach_ghi:'Move notation', vd:'Examples',
     g_tan:'+ (advance)', g_thoai:'- (retreat)', g_binh:'= (traverse)',
     g_tan_t:'Move toward the opponent. The number after is the NUMBER OF STEPS for straight movers, or the DESTINATION FILE for horse, elephant and advisor.',
@@ -106,6 +108,7 @@ const NGON_NGU = {
     chia_se:'Other devices', luot_cua:'Turn',
   },
   zh: {
+    mui_ten:'箭头', bat:'开', tat:'关',
     cach_ghi:'着法记号', vd:'例子',
     g_tan:'进', g_thoai:'退', g_binh:'平',
     g_tan_t:'向对方前进。后面的数字：直行子为步数，马、象、士为目标纵线。',

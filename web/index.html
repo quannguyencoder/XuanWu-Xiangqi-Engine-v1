@@ -17,7 +17,21 @@
     --nen:#f4f2ee; --the:#ffffff; --vien:#dcd8d0;
     --chu:#1f2328; --mo:#6b7280; --xanh:#15803d; --nut:#f0eeea; --nut-hv:#e5e2dc;
   }
-  html[data-nen="sang"] .the{box-shadow:0 1px 3px #0000000f}
+  html[data-nen="sang"] .the{box-shadow:0 1px 2px #00000010,0 4px 12px #00000008;
+        border-color:#d5d0c6}
+  html[data-nen="sang"] h2{color:#4b5563;font-weight:700}
+  html[data-nen="sang"] .ky span:nth-child(odd){color:#4b5563}
+  html[data-nen="sang"] .pv-d{color:#4b5563}
+  html[data-nen="sang"] .y{background:#faf9f6;border-color:#dcd6ca;color:#374151}
+  html[data-nen="sang"] .y b{color:#a5342a}
+  html[data-nen="sang"] .dong-quan{background:#faf9f6;border-color:#dcd6ca}
+  html[data-nen="sang"] .mo-ta span{color:#4b5563}
+  html[data-nen="sang"] .mo-ta .kh{color:#6b7280}
+  html[data-nen="sang"] button,html[data-nen="sang"] select,
+  html[data-nen="sang"] input{border-color:#d5d0c6}
+  html[data-nen="sang"] .nhan{background:#eae6de;color:#374151}
+  html[data-nen="sang"] .ds span:not(:first-child){color:#374151}
+  html[data-nen="sang"] .mo2{color:#6b7280}
   html[data-nen="sang"] .thanh{background:#d8d4cc}
   html[data-nen="sang"] .thanh-tren{color:#fff}
   html[data-nen="sang"] .pv .n-den{color:#374151}
@@ -212,6 +226,7 @@
       </div>
       <div class="hang">
         <button onclick="xinGoiY()" id="bGoiY">💡 Gợi ý nước đi</button>
+        <button onclick="bapMuiTen()" id="bMuiTen" style="flex:0 0 130px">↗ Mũi tên: bật</button>
       </div>
       <div class="hang">
         <input class="fen" id="oFen" placeholder="FEN">
@@ -304,15 +319,18 @@ function ghiNuoc(mv, banTruoc){
   const h = HUONG[nn];
   let dong;
   if(r0===r1){                                  // di ngang
-    dong = nn==='zh' ? `${h.b}${so(cot(c1))}` : `${h.b} ${so(cot(c1))}`;
+    dong = nn==='en' ? `${h.b}${so(cot(c1))}`
+         : nn==='zh' ? `${h.b}${so(cot(c1))}` : `${h.b} ${so(cot(c1))}`;
   } else {
     const tien = do_ ? (r1<r0) : (r1>r0);       // Do tien la hang giam
     const cheo = 'HEA'.includes(loai);
     const n0 = so(cheo ? cot(c1) : Math.abs(r1-r0));
-    dong = (tien?h.t:h.th) + (nn==='zh' ? n0 : ' ' + n0);
+    dong = (tien?h.t:h.th) + (nn==='vi' ? ' ' + n0 : n0);
   }
-  return nn==='zh' ? `${ten}${so(cot(c0))}${dong}`
-                   : `${ten} ${cot(c0)} ${dong}`;
+  // Tieng Viet viet tach chu cho de doc; tieng Anh va tieng Trung viet lien
+  // theo dung chuan quoc te: P7+1, C8=3, 炮二平五
+  return nn==='vi' ? `${ten} ${cot(c0)} ${dong}`
+                   : `${ten}${so(cot(c0))}${dong}`;
 }
 
 // --- Am thanh: tep da cat khoang lang, phat NGAY khi quan bat dau truot ---
@@ -355,6 +373,8 @@ function datNN(m){
   document.getElementById('bXoay').textContent='⇅ '+T.xoay;
   document.getElementById('bGoiY').textContent='💡 '+T.goi_y;
   document.getElementById('bFen').textContent=T.nap_fen;
+  document.getElementById('bMuiTen').textContent=
+    '↗ '+T.mui_ten+': '+(choMuiTen?T.bat:T.tat);
   const dat=(id,ds)=>{const e=document.getElementById(id), g=e.value;
     e.innerHTML=ds.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
     if(g) e.value=g;};
@@ -490,7 +510,7 @@ function ve(){
 function veMuiTen(){
   const b=document.getElementById('ban');
   b.querySelectorAll('.mui-ten').forEach(e=>e.remove());
-  if(!goiY) return;
+  if(!goiY || !choMuiTen) return;
   const [a0,b0]=raMH(goiY[0],goiY[1]), [a1,b1]=raMH(goiY[2],goiY[3]);
   const x1=LE+b0*O, y1=LE+a0*O, x2=LE+b1*O, y2=LE+a1*O;
   const dx=x2-x1, dy=y2-y1, d=Math.hypot(dx,dy)||1, lui=O*.34;
@@ -508,6 +528,13 @@ function veMuiTen(){
 }
 
 function veLai(){ ve(); veMuiTen(); }
+
+function bapMuiTen(){
+  choMuiTen=!choMuiTen;
+  document.getElementById('bMuiTen').textContent =
+    '↗ '+T.mui_ten+': '+(choMuiTen?T.bat:T.tat);
+  veMuiTen();
+}
 function xoayBan(){ xoay=!xoay; veBan(); veLai(); }
 
 // LUON goi xong() du xay ra chuyen gi. Neu khong, di() se dung mai o cho
@@ -630,9 +657,7 @@ function hienPhanTich(p){
     const bc=bcs.join(' <span class="mt">→</span> ');
     document.getElementById('pv').innerHTML = bc
       ? `<div class="pv-d">${T.bien_chinh}</div><div class="pv-n">${bc}</div>
-         <div class="pv-d" style="margin-top:6px">${T.neu_di}
-           <b>${ghiNuoc(p.nuoc_tot, B)}</b> → ${T.diem_thanh}
-           <b>${p.diem}</b></div>`
+`
       : '';
   }
   document.getElementById('nhanSach').style.display = p.trong_sach?'inline-block':'none';
@@ -662,6 +687,7 @@ async function goi(duong, than, giay=45){
 
 let dangPhanTich=false;
 let phanTichCuoi=null;      // nho de ve lai khi doi ngon ngu
+let choMuiTen=true;         // nguoi choi tu bat/tat mui ten goi y
 async function phanTich(muc){
   // Chi cho MOT yeu cau phan tich chay mot luc. Neu khong, nguoi choi di nhanh
   // se xep hang hang loat yeu cau, moi cai giu khoa engine o may chu va lam
@@ -792,6 +818,35 @@ async function lui(){
   document.getElementById('vuaDiTxt').textContent=kyHieu(vuaDi);
   cham={trang:null,den:null}; veCham();
   capNhat(d); veDs();
+  // Neu lui xong ma den luot MAY thi cho may di, de nguoi choi tiep tuc duoc.
+  // Truoc day lui mot nuoc la ket o luot may va khong choi tiep duoc.
+  if(!tuChoi() && d.trang_thai==='dang_choi' &&
+     d.ben_di!==document.getElementById('benCam').value){
+    setTimeout(()=>mayDi(), 350);
+  } else phanTich();
+}
+
+// Cho may di mot nuoc (dung sau khi lui ve dung luot may)
+async function mayDi(){
+  if(!van||dangCho) return;
+  dangCho=true;
+  try{
+    const d=await goi('/api/may-di',{ma_van:van,
+      muc_do:document.getElementById('mucDo').value});
+    if(!d||d.loi) return;
+    if(d.nuoc_may){
+      banCo=d.ban_co.map(h=>h.split(''));
+      const [r0,c0,r1,c1]=d.nuoc_may;
+      const bi=banCo[r1][c1];
+      banCo[r0][c0]=bi; banCo[r1][c1]='.';
+      hopLe=[]; ve();
+      await new Promise(r=>bay(d.nuoc_may,r));
+      vuaDi=d.nuoc_may; lichSu.push(d.nuoc_may);
+      document.getElementById('vuaDiTxt').textContent=
+        ghiNuoc(d.nuoc_may, banTruocNuoc[banTruocNuoc.length-1]||banCo);
+    }
+    capNhat(d); veDs();
+  } finally { dangCho=false; lamMoiTrangThai(); }
   phanTich();
 }
 

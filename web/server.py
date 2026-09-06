@@ -187,6 +187,8 @@ class May(http.server.SimpleHTTPRequestHandler):
                 return self._phan_tich(req)
             if duong == "/api/lui":
                 return self._lui(req)
+            if duong == "/api/may-di":
+                return self._may_di(req)
             if duong == "/api/nap-fen":
                 return self._nap_fen(req)
             if duong == "/api/dia-chi":
@@ -283,6 +285,24 @@ class May(http.server.SimpleHTTPRequestHandler):
             "diem": diem, "do_sau": do_sau, "so_nut": nut,
             "ben": "trang" if v.side == WHITE else "den",
         })
+
+    def _may_di(self, req):
+        """Cho may di mot nuoc. Dung sau khi nguoi choi lui ve dung luot may."""
+        with _khoa:
+            v = _van.get(req.get("ma_van"))
+        if v is None:
+            return self._tra({"loi": "khong tim thay van"}, 404)
+        if v.trang_thai()[0] != DANG_CHOI:
+            return self._tra({**_ban_co_json(v), "diem": _cham_diem(v),
+                              "nuoc_may": None})
+        giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
+        with _khoa_engine:
+            _, nuoc, _, _ = strongest.tim_nuoc_di_theo_gio(v.board, v.side, giay)
+        nuoc = _tranh_tu_thua(v, nuoc, giay)
+        if nuoc:
+            v.di(nuoc)
+        return self._tra({**_ban_co_json(v), "diem": _cham_diem(v, 0.25),
+                          "nuoc_may": list(nuoc) if nuoc else None})
 
     def _phan_tich(self, req):
         """Phan tich day du mot the co: diem, nuoc tot nhat, bien chinh, so nut."""
