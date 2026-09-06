@@ -353,6 +353,12 @@ class May(http.server.SimpleHTTPRequestHandler):
         trang (F5) - client chi luu duoc danh sach nuoc di (khong co CSDL o
         server), nen phai tao van moi roi "lui 0 nuoc" voi ca lich su de dung
         lai dung trang thai cu.
+
+        fen_goc (tuy chon): the co XUAT PHAT de phat lai tren do, thay vi the
+        co khoi dau chuan. Can cho truong hop khoi phuc mot van bat dau tu FEN
+        tuy y (nap-fen) roi nguoi choi da di tiep vai nuoc truoc khi tai trang -
+        neu khong co tham so nay, phat lai se sai vi lai bat dau tu ban co
+        chuan thay vi dung FEN da nap.
         """
         ma = req.get("ma_van")
         with _khoa:
@@ -362,7 +368,15 @@ class May(http.server.SimpleHTTPRequestHandler):
         so_lui = max(0, int(req.get("so_nuoc", 1)))
         cac_nuoc = req.get("cac_nuoc", [])
         giu = cac_nuoc[:max(0, len(cac_nuoc) - so_lui)]
-        moi = VanCo()
+        fen_goc = req.get("fen_goc")
+        if fen_goc:
+            try:
+                b0, s0 = fen_to_board(fen_goc)
+                moi = VanCo(b0, s0)
+            except Exception:
+                moi = VanCo()
+        else:
+            moi = VanCo()
         for mv in giu:
             try:
                 moi.di(tuple(mv))

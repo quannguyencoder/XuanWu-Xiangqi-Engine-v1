@@ -53,6 +53,8 @@ const NGON_NGU = {
     tot:'Tốt', khong_chuan:'Không chuẩn', sai_lam:'Sai lầm',
     sai_nghiem:'Sai nghiêm trọng', chat_luong:'Nước vừa đi',
     chia_se:'Máy khác vào bằng', luot_cua:'Đến lượt',
+    tong_ket:'Tổng kết ván', ho_nang_nhat:'Nước hớ nặng nhất',
+    khong_ho:'không có nước hớ nào', so_nuoc_ngan:'nước',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -106,6 +108,8 @@ const NGON_NGU = {
     tot:'Good', khong_chuan:'Inaccuracy', sai_lam:'Mistake',
     sai_nghiem:'Blunder', chat_luong:'Last move',
     chia_se:'Other devices', luot_cua:'Turn',
+    tong_ket:'Game review', ho_nang_nhat:'Biggest blunder',
+    khong_ho:'no blunders', so_nuoc_ngan:'move',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -159,5 +163,7 @@ const NGON_NGU = {
     tot:'好棋', khong_chuan:'不精确', sai_lam:'失误',
     sai_nghiem:'严重失误', chat_luong:'上一着',
     chia_se:'其他设备', luot_cua:'轮到',
+    tong_ket:'对局复盘', ho_nang_nhat:'最大失误',
+    khong_ho:'没有明显失误', so_nuoc_ngan:'着',
   },
 };

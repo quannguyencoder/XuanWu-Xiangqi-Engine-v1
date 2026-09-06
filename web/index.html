@@ -209,6 +209,8 @@
       <div id="chamHai" style="margin-top:9px;display:grid;
            grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
       </div>
+      <div id="tongKetVan" style="display:none;margin-top:12px;
+           padding-top:10px;border-top:1px solid var(--vien)"></div>
     </div>
 
     <div class="the">
@@ -674,6 +676,10 @@ function thanh(d){
 }
 
 let cham={trang:null, den:null};      // danh gia nuoc gan nhat cua tung ben
+// Lich su CHAT LUONG tung nuoc ca van, de tong ket sau khi ket thuc:
+// {ben, truoc, sau, idx} - idx la vi tri trong lichSu/banTruocNuoc de tra
+// nguoc lai ban co truoc nuoc do khi can ghi ky hieu truyen thong.
+let lichSuDiem=[];
 
 function veCham(){
   const o=(ben,ten)=>{
@@ -695,6 +701,40 @@ function chamNuoc(truoc,sau,ben){
   return{t:T.sai_nghiem,m:'#e74c3c',l};
 }
 
+// Tong ket ca van: dem so nuoc moi loai (Tot/Khong chuan/Sai lam/Sai nghiem
+// trong) va tim nuoc ho NANG NHAT cho tung ben, dua tren diem da tinh san cho
+// moi nuoc trong lichSuDiem - khong tinh lai gi ca, chi doc lai va phan loai
+// bang dung mot ham chamNuoc() da dung de hien "nuoc vua di".
+function veTongKet(){
+  const e=document.getElementById('tongKetVan');
+  if(!lichSuDiem.length){ e.style.display='none'; e.innerHTML=''; return; }
+  const dem={trang:{}, den:{}}, toi={trang:null, den:null};
+  for(const {ben,truoc,sau,idx} of lichSuDiem){
+    const k=chamNuoc(truoc,sau,ben);
+    dem[ben][k.t]=(dem[ben][k.t]||0)+1;
+    if(!toi[ben] || k.l<toi[ben].l) toi[ben]={...k, idx};
+  }
+  const dong=(ben,ten)=>{
+    const d=dem[ben];
+    const tk=[T.tot,T.khong_chuan,T.sai_lam,T.sai_nghiem]
+      .map(nh=>`${nh} ${d[nh]||0}`).join(' · ');
+    const x=toi[ben];
+    let hop;
+    if(!x || x.l>=-12){
+      hop=`<div style="color:var(--mo);margin-top:2px">${T.khong_ho}</div>`;
+    }else{
+      const mv=lichSu[x.idx], b=banTruocNuoc[x.idx];
+      const ky=mv?ghiNuoc(mv,b):'—';
+      hop=`<div style="margin-top:2px">${T.ho_nang_nhat}: <b style="color:${x.m}">${ky}</b>`
+         +` <span style="color:var(--mo)">${x.l}</span></div>`;
+    }
+    return `<div><b>${ten}</b> — <span style="color:var(--mo)">${tk}</span>${hop}</div>`;
+  };
+  e.innerHTML = `<div style="font-weight:700;margin-bottom:6px">${T.tong_ket}</div>`
+    + dong('trang','● '+T.do_) + dong('den','● '+T.den_);
+  e.style.display='block';
+}
+
 function capNhat(d){
   banCo=d.ban_co.map(h=>h.split('')); hopLe=d.nuoc_hop_le||[]; benDi=d.ben_di;
   if(d.fen) document.getElementById('oFen').value=d.fen;
@@ -710,6 +750,7 @@ function capNhat(d){
     amThanh(d.trang_thai==='hoa' ? (TEP.hoa?'hoa':'het')
             : (tuChoi()||ai2===minh2 ? (TEP.win?'win':'het')
                                      : (TEP.thua?'thua':'het')));
+    veTongKet();                        // ván đã xong -> hiện tổng kết
   }else{
     t.innerHTML = tuChoi()
       ? `${T.luot_cua} <b>${d.ben_di==='trang'?T.do_:T.den_}</b>`
@@ -717,6 +758,7 @@ function capNhat(d){
     // Khong co am rieng cho chieu tuong: no xay ra lien tuc trong van, va
     // thanh trang thai da bao bang chu do roi.
     if(d.bi_chieu) t.innerHTML+=` — <b style="color:#e74c3c">${T.bi_chieu}</b>`;
+    document.getElementById('tongKetVan').style.display='none';   // dang choi -> an di
   }
   veLai();
 }
@@ -807,17 +849,16 @@ function doiCheDo(){ goiY=null; veMuiTen(); neuTuChoi(); }
 // dong dung khop moi thay doi luat sau nay. Dung KEY 'qisheng_van'.
 const KHOA_LUU='qisheng_van';
 
+// Nguon goc van HIEN TAI: {kieu:'nuoc'} (bat dau tu the co chuan) hoac
+// {kieu:'fen', fen:'...'} (nap tu FEN tuy y). Luu rieng thay vi doan tu lichSu,
+// vi neu nap FEN roi choi tiep vai nuoc, lichSu KHONG the tu no cho biet diem
+// xuat phat that su - phai nho rieng, va truyen lai cho server qua fen_goc khi
+// khoi phuc (xem _lui trong server.py).
+let vanGoc={kieu:'nuoc'};
+
 function luuVan(){
   try{
-    localStorage.setItem(KHOA_LUU, JSON.stringify({kieu:'nuoc', lichSu,
-      benCam:document.getElementById('benCam').value,
-      cheDo:document.getElementById('cheDo').value,
-      mucDo:document.getElementById('mucDo').value, xoay}));
-  }catch(e){}
-}
-function luuVanFen(fen){
-  try{
-    localStorage.setItem(KHOA_LUU, JSON.stringify({kieu:'fen', fen,
+    localStorage.setItem(KHOA_LUU, JSON.stringify({...vanGoc, lichSu, lichSuDiem,
       benCam:document.getElementById('benCam').value,
       cheDo:document.getElementById('cheDo').value,
       mucDo:document.getElementById('mucDo').value, xoay}));
@@ -842,27 +883,27 @@ function suyRaBiAn(ban){
 async function khoiPhucHoacMoi(){
   let luu=null;
   try{ luu=JSON.parse(localStorage.getItem(KHOA_LUU)||'null'); }catch(e){}
-  if(!luu){ vanMoi(); return; }
+  if(!luu || (luu.kieu!=='nuoc' && luu.kieu!=='fen')){ vanMoi(); return; }
   document.getElementById('benCam').value=luu.benCam||'trang';
   document.getElementById('cheDo').value=luu.cheDo||'may';
   document.getElementById('mucDo').value=luu.mucDo||'vua';
   xoay=!!luu.xoay;
   try{
-    let d;
-    if(luu.kieu==='fen' && luu.fen){
-      d=await goi('/api/nap-fen',{fen:luu.fen});
-      if(!d||d.loi) throw new Error(d&&d.loi||'fen loi');
-      van=d.ma_van; lichSu=[]; banTruocNuoc=[]; quanBiAn=suyRaBiAn(d.ban_co.map(h=>h.split('')));
-      vuaDi=null; diemTruoc=505;
-    }else if(luu.kieu==='nuoc'){
-      const moi=await goi('/api/van-moi',{nguoi_cam:luu.benCam||'trang',muc_do:luu.mucDo||'vua'});
-      if(!moi||moi.loi) throw new Error(moi&&moi.loi||'khong tao duoc van moi');
-      d=await goi('/api/lui',{ma_van:moi.ma_van,so_nuoc:0,cac_nuoc:luu.lichSu||[]});
-      if(!d||d.loi) throw new Error(d&&d.loi||'khong khoi phuc duoc');
-      van=moi.ma_van; lichSu=(luu.lichSu||[]).slice(); banTruocNuoc=[];
-      quanBiAn=suyRaBiAn(d.ban_co.map(h=>h.split('')));
-      vuaDi=lichSu.length?lichSu[lichSu.length-1]:null; diemTruoc=505;
-    }else{ vanMoi(); return; }
+    // Buoc 1: xin mot ma_van (noi dung ban dau khong quan trong, se bi
+    // /api/lui ghi de o buoc 2) - dung nap-fen hay van-moi tuy nguon goc.
+    const moi = luu.kieu==='fen'
+      ? await goi('/api/nap-fen',{fen:luu.fen})
+      : await goi('/api/van-moi',{nguoi_cam:luu.benCam||'trang',muc_do:luu.mucDo||'vua'});
+    if(!moi||moi.loi) throw new Error((moi&&moi.loi)||'khong tao duoc van');
+    // Buoc 2: phat lai TOAN BO nuoc di da luu, dung diem xuat phat da luu.
+    const d = await goi('/api/lui',{ma_van:moi.ma_van, so_nuoc:0,
+      cac_nuoc:luu.lichSu||[], fen_goc: luu.kieu==='fen' ? luu.fen : undefined});
+    if(!d||d.loi) throw new Error((d&&d.loi)||'khong khoi phuc duoc');
+    vanGoc = luu.kieu==='fen' ? {kieu:'fen',fen:luu.fen} : {kieu:'nuoc'};
+    van=moi.ma_van; lichSu=(luu.lichSu||[]).slice(); banTruocNuoc=[];
+    lichSuDiem=Array.isArray(luu.lichSuDiem)?luu.lichSuDiem.slice():[];
+    quanBiAn=suyRaBiAn(d.ban_co.map(h=>h.split('')));
+    vuaDi=lichSu.length?lichSu[lichSu.length-1]:null; diemTruoc=505;
     chon=null; goiY=null; phien++;
     document.getElementById('ds').innerHTML='';
     document.getElementById('nuocTot').textContent='—';
@@ -883,7 +924,8 @@ async function vanMoi(){
   const d=await goi('/api/van-moi',{nguoi_cam:ben,
     muc_do:document.getElementById('mucDo').value});
   if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
-  van=d.ma_van; chon=null; goiY=null; lichSu=[]; quanBiAn=[]; banTruocNuoc=[]; phien++;
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; lichSuDiem=[]; quanBiAn=[]; banTruocNuoc=[]; phien++;
+  vanGoc={kieu:'nuoc'};
   veBiAn();
   vuaDi=d.nuoc_may||null; diemTruoc=505;
   if(d.nuoc_may) lichSu.push(d.nuoc_may);
@@ -940,10 +982,13 @@ async function _di(mv){
   // Cham RIENG cho tung ben: nguoi choi can thay danh gia nuoc CUA MINH chu
   // khong bi nuoc cua may ghi de ngay sau do.
   const dc=d.diem_nuoc_nguoi??d.diem;
-  if(dc!==undefined) cham[benTruoc]=chamNuoc(diemTruoc,dc,benTruoc);
-  if(d.nuoc_may && d.diem!==undefined)
-    cham[benTruoc==='trang'?'den':'trang']=
-      chamNuoc(dc, d.diem, benTruoc==='trang'?'den':'trang');
+  const benMay=benTruoc==='trang'?'den':'trang';
+  if(dc!==undefined){
+    cham[benTruoc]=chamNuoc(diemTruoc,dc,benTruoc);
+    // idx = lichSu.length-1: nuoc nguoi choi da push o tren, vi tri da on dinh.
+    lichSuDiem.push({ben:benTruoc, truoc:diemTruoc, sau:dc, idx:lichSu.length-1});
+  }
+  if(d.nuoc_may && d.diem!==undefined) cham[benMay]=chamNuoc(dc, d.diem, benMay);
   veCham();
   if(d.nuoc_may){
     const [rr,cc]=[d.nuoc_may[2],d.nuoc_may[3]];
@@ -956,6 +1001,10 @@ async function _di(mv){
     await new Promise(r=>bay(d.nuoc_may,r));
     vuaDi=d.nuoc_may; lichSu.push(d.nuoc_may);
     document.getElementById('vuaDiTxt').textContent=kyHieu(d.nuoc_may);
+    // idx ghi SAU khi push o tren, vi luc tinh chamNuoc phia tren nuoc may
+    // CHUA duoc push vao lichSu.
+    if(d.diem!==undefined)
+      lichSuDiem.push({ben:benMay, truoc:dc, sau:d.diem, idx:lichSu.length-1});
   }
   diemTruoc=d.diem; capNhat(d); veDs();
   if(d.trang_thai==='dang_choi') phanTich();
@@ -983,13 +1032,18 @@ async function lui(){
   const bo = 1;      // luon lui MOT nuoc, bam nhieu lan de lui tiep
   const nuocLui=lichSu[lichSu.length-1];   // nuoc sap bi lui, de choi hoat hinh bay nguoc
   try{
-    const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu});
+    // fen_goc: neu van nay bat dau tu mot FEN tuy y (khong phai the co chuan),
+    // server phai phat lai tren DUNG diem xuat phat do - thieu tham so nay se
+    // lui ve nham the co chuan (da tung xay ra, kiem chung qua API that).
+    const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu,
+      fen_goc: vanGoc.kieu==='fen' ? vanGoc.fen : undefined});
     if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
     // Truoc day cap nhat ban co ngay lap tuc, cam giac qua dot ngot. Nay cho
     // quan BAY NGUOC ve o cu truoc (dung lai ham bay(), chi doi chieu diem
     // dau/cuoi) roi moi cap nhat trang thai - amThanh() da nam san trong bay().
     if(nuocLui) await new Promise(r=>bay([nuocLui[2],nuocLui[3],nuocLui[0],nuocLui[1]], r));
     lichSu=lichSu.slice(0,Math.max(0,lichSu.length-bo));
+    lichSuDiem=lichSuDiem.filter(x=>x.idx<lichSu.length);   // bo danh gia cua nuoc vua lui
     vuaDi=lichSu.length?lichSu[lichSu.length-1]:null;
     goiY=null; phien++; chon=null;
     document.getElementById('vuaDiTxt').textContent=kyHieu(vuaDi);
@@ -1033,11 +1087,12 @@ async function napFen(){
   if(!f) return;
   const d=await goi('/api/nap-fen',{fen:f});
   if(d.loi){ document.getElementById('ttVan').textContent='⚠ '+d.loi; return; }
-  van=d.ma_van; chon=null; goiY=null; lichSu=[]; quanBiAn=[]; banTruocNuoc=[]; vuaDi=null; phien++;
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; lichSuDiem=[]; quanBiAn=[]; banTruocNuoc=[]; vuaDi=null; phien++;
   document.getElementById('ds').innerHTML='';
   veBiAn();
+  vanGoc={kieu:'fen',fen:f};
   capNhat(d);
-  luuVanFen(f);
+  luuVan();
   phanTich();
 }
 
