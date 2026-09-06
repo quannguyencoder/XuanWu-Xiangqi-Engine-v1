@@ -441,10 +441,12 @@ function ve(){
   });
 }
 
+// Khong ve mui ten nua: no de che quan co va gay roi mat. Nuoc tot nhat da
+// hien bang chu o o ben phai roi.
 function veMuiTen(){
   const b=document.getElementById('ban');
   b.querySelectorAll('.mui-ten').forEach(e=>e.remove());
-  if(!goiY) return;
+  return;
   const [a0,b0]=raMH(goiY[0],goiY[1]), [a1,b1]=raMH(goiY[2],goiY[3]);
   const x1=LE+b0*O, y1=LE+a0*O, x2=LE+b1*O, y2=LE+a1*O;
   const dx=x2-x1, dy=y2-y1, d=Math.hypot(dx,dy)||1, lui=O*.34;
@@ -574,16 +576,34 @@ function hienPhanTich(p){
     <span>${T.thoi_gian}</span><span>${p.giay??'—'}s (${((p.nut_moi_giay||0)/1000).toFixed(0)}k ${T.nut_giay})</span>`;
 }
 
-const goi=async(d,b)=>(await fetch(d,{method:'POST',
-  headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})).json();
+// Moi yeu cau deu co gioi han thoi gian. Neu khong co, mot yeu cau treo se
+// khien co dangCho khong bao gio duoc go va giao dien dung han.
+async function goi(duong, than, giay=45){
+  const huy=new AbortController();
+  const dh=setTimeout(()=>huy.abort(), giay*1000);
+  try{
+    const r=await fetch(duong,{method:'POST',signal:huy.signal,
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(than||{})});
+    return await r.json();
+  }catch(e){
+    return {loi: e.name==='AbortError' ? 'quá thời gian chờ' : String(e)};
+  }finally{ clearTimeout(dh); }
+}
 
+let dangPhanTich=false;
 async function phanTich(muc){
+  // Chi cho MOT yeu cau phan tich chay mot luc. Neu khong, nguoi choi di nhanh
+  // se xep hang hang loat yeu cau, moi cai giu khoa engine o may chu va lam
+  // nuoc di tiep theo phai doi rat lau.
+  if(dangPhanTich) return;
+  dangPhanTich=true;
   const p=++phien;
   // Tu dong chay sau moi nuoc thi dung muc NHANH, de khong bat nguoi choi doi
   // 10 giay chi de xem goi y. Bam nut Goi y moi dung muc da chon.
   const d=await goi('/api/phan-tich',{ma_van:van,
     muc_do: muc || 'de'});
-  if(p!==phien) return;
+  dangPhanTich=false;
+  if(p!==phien||!d||d.loi) return;
   if(d.diem!==undefined){ thanh(d.diem); diemTruoc=d.diem; }
   hienPhanTich(d);
 }
@@ -595,6 +615,7 @@ async function vanMoi(){
   xoay=(ben==='den');
   const d=await goi('/api/van-moi',{nguoi_cam:ben,
     muc_do:document.getElementById('mucDo').value});
+  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
   van=d.ma_van; chon=null; goiY=null; lichSu=[]; quanBiAn=[]; banTruocNuoc=[]; phien++;
   veBiAn();
   vuaDi=d.nuoc_may||null; diemTruoc=505;
@@ -618,10 +639,16 @@ async function di(mv){
   document.getElementById('vuaDiTxt').textContent=
     ghiNuoc(mv, banTruocNuoc[banTruocNuoc.length-1]);
   document.getElementById('ttVan').textContent = tuChoi()?T.dang_phan_tich:T.may_nghi;
-  const d=await goi('/api/di',{ma_van:van,nuoc:mv,tu_choi:tuChoi(),
-    muc_do:document.getElementById('mucDo').value});
-  dangCho=false;
-  if(d.loi){ document.getElementById('ttVan').textContent='⚠ '+d.loi; return; }
+  let d;
+  try{
+    d=await goi('/api/di',{ma_van:van,nuoc:mv,tu_choi:tuChoi(),
+      muc_do:document.getElementById('mucDo').value});
+  } finally { dangCho=false; }     // du co loi gi cung phai go co
+  if(!d||d.loi){
+    document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng');
+    lichSu.pop(); banTruocNuoc.pop();   // bo nuoc chua duoc may chu ghi nhan
+    return;
+  }
   const dc=d.diem_nuoc_nguoi??d.diem;
   if(dc!==undefined){
     const c=chamNuoc(diemTruoc,dc,benTruoc);
@@ -651,7 +678,7 @@ async function xinGoiY(){
   document.getElementById('nuocTot').textContent='…';
   const d=await goi('/api/goi-y',{ma_van:van,
     muc_do:document.getElementById('mucDo').value});
-  if(p!==phien) return;
+  if(p!==phien||!d||d.loi){ document.getElementById('nuocTot').textContent='—'; return; }
   if(d.nuoc){ goiY=d.nuoc; veMuiTen();
     document.getElementById('benTot').textContent=d.ben==='trang'?'Đỏ':'Đen';
     document.getElementById('nuocTot').textContent=
@@ -663,6 +690,7 @@ async function lui(){
   if(!van||dangCho) return;
   const bo = 1;      // luon lui MOT nuoc, bam nhieu lan de lui tiep
   const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu});
+  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
   amThanh('di');                      // lui cung phat tieng nhu khi di
   lichSu=lichSu.slice(0,Math.max(0,lichSu.length-bo));
   vuaDi=lichSu.length?lichSu[lichSu.length-1]:null;
