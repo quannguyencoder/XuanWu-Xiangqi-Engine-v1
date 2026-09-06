@@ -466,18 +466,26 @@ function veMuiTen(){
 function veLai(){ ve(); veMuiTen(); }
 function xoayBan(){ xoay=!xoay; veBan(); veLai(); }
 
+// LUON goi xong() du xay ra chuyen gi. Neu khong, di() se dung mai o cho
+// `await new Promise(r=>bay(...))` va dong trang thai ket lai o "May dang
+// nghi..." trong khi ban co van bam duoc - dung trieu chung nguoi dung gap.
 function bay(mv, xong){
-  const b=document.getElementById('ban'), kt=O*.82;
-  const [sr,sc]=raMH(mv[0],mv[1]), [dr,dc]=raMH(mv[2],mv[3]);
-  const q=[...b.querySelectorAll('.quan')].find(e=>
-    Math.abs(parseFloat(e.style.left)-(LE+sc*O-kt/2))<2 &&
-    Math.abs(parseFloat(e.style.top)-(LE+sr*O-kt/2))<2);
-  if(!q){ xong(); return; }
-  amThanh(banCo[mv[2]][mv[3]]!=='.'?'an':'di');
-  q.classList.add('bay');
-  requestAnimationFrame(()=>{ q.style.left=(LE+dc*O-kt/2)+'px';
-                              q.style.top=(LE+dr*O-kt/2)+'px'; });
-  setTimeout(xong,265);
+  let daGoi=false;
+  const chot=()=>{ if(!daGoi){ daGoi=true; xong(); } };
+  setTimeout(chot, 900);              // luoi an toan: du gi cung go sau 0,9s
+  try{
+    const b=document.getElementById('ban'), kt=O*.82;
+    const [sr,sc]=raMH(mv[0],mv[1]), [dr,dc]=raMH(mv[2],mv[3]);
+    const q=[...b.querySelectorAll('.quan')].find(e=>
+      Math.abs(parseFloat(e.style.left)-(LE+sc*O-kt/2))<2 &&
+      Math.abs(parseFloat(e.style.top)-(LE+sr*O-kt/2))<2);
+    if(!q){ chot(); return; }
+    amThanh(banCo[mv[2]] && banCo[mv[2]][mv[3]]!=='.' ? 'an' : 'di');
+    q.classList.add('bay');
+    requestAnimationFrame(()=>{ q.style.left=(LE+dc*O-kt/2)+'px';
+                                q.style.top=(LE+dr*O-kt/2)+'px'; });
+    setTimeout(chot,265);
+  }catch(e){ console.error('bay:',e); chot(); }
 }
 
 function bam(r,c){
@@ -558,10 +566,17 @@ function capNhat(d){
 function hienPhanTich(p){
   if(p.nuoc_tot){
     document.getElementById('benTot').textContent=p.ben_di==='trang'?'Đỏ':'Đen';
-    document.getElementById('nuocTot').textContent=kyHieu(p.nuoc_tot);
-    const bc=(p.bien_chinh||[]).map(kyHieu).join(' ');
+    document.getElementById('nuocTot').textContent=ghiNuoc(p.nuoc_tot, banCo);
+    // Bien chinh: moi nuoc doi tren ban co da di cac nuoc truoc do, nen phai
+    // mo phong tung buoc thi ky hieu moi dung.
+    let mo=banCo.map(h=>h.slice()), bcs=[];
+    for(const m of (p.bien_chinh||[])){
+      bcs.push(ghiNuoc(m, mo));
+      mo[m[2]][m[3]]=mo[m[0]][m[1]]; mo[m[0]][m[1]]='.';
+    }
+    const bc=bcs.join('  ');
     document.getElementById('pv').innerHTML = bc
-      ? `${T.bien_chinh}: <b>${bc}</b><br>${T.neu_di} ${kyHieu(p.nuoc_tot)} → ${T.diem_thanh} ${p.diem}`
+      ? `${T.bien_chinh}: <b>${bc}</b><br>${T.neu_di} ${ghiNuoc(p.nuoc_tot, banCo)} → ${T.diem_thanh} ${p.diem}`
       : '';
     goiY=p.nuoc_tot; veMuiTen();
   }
@@ -629,6 +644,29 @@ async function vanMoi(){
 }
 
 async function di(mv){
+  try{ await _di(mv); }
+  catch(e){
+    console.error('di:',e);
+    document.getElementById('ttVan').textContent='⚠ '+e;
+  }
+  finally{
+    dangCho=false;
+    lamMoiTrangThai();          // khong bao gio de dong trang thai ket lai
+  }
+}
+
+// Dat lai dong trang thai theo tinh hinh HIEN TAI, khong dua vao phan hoi cu
+function lamMoiTrangThai(){
+  const t=document.getElementById('ttVan');
+  if(!t || !banCo) return;
+  if(t.innerHTML.includes('⚠')) return;
+  const minh=document.getElementById('benCam').value;
+  t.innerHTML = tuChoi()
+    ? `${T.luot_cua} <b>${benDi==='trang'?'Đỏ':'Đen'}</b>`
+    : (benDi===minh ? T.den_luot : T.may_nghi);
+}
+
+async function _di(mv){
   dangCho=true; const benTruoc=benDi;
   const anDuoc=banCo[mv[2]][mv[3]];
   if(anDuoc!=='.') { quanBiAn.push(anDuoc); veBiAn(); }
@@ -639,11 +677,8 @@ async function di(mv){
   document.getElementById('vuaDiTxt').textContent=
     ghiNuoc(mv, banTruocNuoc[banTruocNuoc.length-1]);
   document.getElementById('ttVan').textContent = tuChoi()?T.dang_phan_tich:T.may_nghi;
-  let d;
-  try{
-    d=await goi('/api/di',{ma_van:van,nuoc:mv,tu_choi:tuChoi(),
-      muc_do:document.getElementById('mucDo').value});
-  } finally { dangCho=false; }     // du co loi gi cung phai go co
+  const d=await goi('/api/di',{ma_van:van,nuoc:mv,tu_choi:tuChoi(),
+    muc_do:document.getElementById('mucDo').value});
   if(!d||d.loi){
     document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng');
     lichSu.pop(); banTruocNuoc.pop();   // bo nuoc chua duoc may chu ghi nhan
