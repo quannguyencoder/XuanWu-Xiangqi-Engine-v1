@@ -57,11 +57,13 @@
   .ban svg{display:block}
   .lop-bam{position:absolute;inset:0;z-index:3;cursor:pointer}
   .quan{position:absolute;z-index:4;border-radius:50%;display:flex;
-        align-items:center;justify-content:center;font-weight:700;cursor:pointer;
-        user-select:none;transition:transform .15s,box-shadow .15s;
+        align-items:center;justify-content:center;font-weight:700;cursor:grab;
+        user-select:none;touch-action:none;transition:transform .15s,box-shadow .15s;
         background:radial-gradient(circle at 34% 30%,#fdf7ea,#e4d0a9 72%);
         box-shadow:0 2px 5px #0006}
   .quan:hover{transform:scale(1.06)}
+  .quan.keo{z-index:9;cursor:grabbing;transform:scale(1.1);
+            box-shadow:0 10px 22px #000a}
   .quan.do{color:var(--do);border:2.5px solid var(--do);
            box-shadow:0 2px 6px #0007,inset 0 0 0 1.5px #fff8}
   .quan.den{color:var(--den);border:2.5px solid var(--den);
@@ -268,6 +270,7 @@ const O=72, LE=60;   // le 60 de so cot khong bi quan co (ban kinh 29,5px) che
 const TEN={R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
            K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
 let van=null, banCo=null, chon=null, hopLe=[], vuaDi=null, dangCho=false;
+let boQuaClickKeTiep=false;   // vua keo-tha xong mot nuoc thi bo qua click ke tiep tren cung quan
 let benDi='trang', goiY=null, xoay=false, diemTruoc=505, phien=0, lichSu=[];
 let quanBiAn=[];        // ['p','R',...] theo thu tu bi an
 let banTruocNuoc=[];    // ban co truoc tung nuoc, de ghi ky hieu truyen thong
@@ -494,7 +497,9 @@ function ve(){
       d.classList.add('vua-di');
     if(chon&&hopLe.some(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c))
       d.classList.add('se-bi-an');
+    d.dataset.r=r; d.dataset.c=c;
     d.onclick=()=>bam(r,c);
+    d.onpointerdown=e=>batDauKeo(e,r,c);
     b.appendChild(d);
   }
   if(chon) hopLe.filter(m=>m[0]===chon[0]&&m[1]===chon[1]).forEach(m=>{
@@ -579,6 +584,7 @@ function bay(mv, xong){
 }
 
 function bam(r,c){
+  if(boQuaClickKeTiep){ boQuaClickKeTiep=false; return; }   // vua xu ly xong bang keo-tha
   if(!van) return;
   if(dangCho&&!tuChoi()) return;
   if(chon){
@@ -590,6 +596,68 @@ function bam(r,c){
   const cuaMinh = minh==='trang' ? p===p.toUpperCase() : p===p.toLowerCase();
   chon = (p!=='.'&&hopLe.some(m=>m[0]===r&&m[1]===c)&&(tuChoi()||cuaMinh))?[r,c]:null;
   ve();
+}
+
+// Keo-tha quan bang Pointer Events (dung chung cho chuot va cham tay).
+// Neu chi bam khong keo (khong vuot qua nguong 5px) thi khong lam gi ca, de
+// su kien click tu nhien phia sau xu ly y het nhu truoc day - vay nen kieu
+// bam-chon-roi-bam-o-dich cu van chay dung, khong bi thay doi.
+function batDauKeo(e,r,c){
+  if(e.button!==undefined && e.button!==0) return;      // chi nut trai chuot
+  if(!van || (dangCho&&!tuChoi())) return;
+  // Neu da chon mot quan va day la NUOC AN hop le tu quan do, day la buoc bam
+  // de an quan - de nguyen cho click thuong xu ly, khong cuop lam keo-tha.
+  if(chon){
+    const mv=hopLe.find(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c);
+    if(mv) return;
+  }
+  const p=banCo[r][c];
+  const minh=document.getElementById('benCam').value;
+  const cuaMinh = minh==='trang' ? p===p.toUpperCase() : p===p.toLowerCase();
+  if(p==='.'||!(tuChoi()||cuaMinh)) return;
+  if(!hopLe.some(m=>m[0]===r&&m[1]===c)) return;         // quan nay khong co nuoc di nao
+  e.preventDefault();
+  chon=[r,c]; ve();
+  const b=document.getElementById('ban');
+  const el=[...b.querySelectorAll('.quan')].find(x=>+x.dataset.r===r&&+x.dataset.c===c);
+  if(!el) return;
+  const kt=O*.82, batDau={x:e.clientX,y:e.clientY};
+  let daKeoThat=false;
+  try{ el.setPointerCapture(e.pointerId); }catch(err){}
+  const diChuyen=ev=>{
+    const dx=ev.clientX-batDau.x, dy=ev.clientY-batDau.y;
+    if(!daKeoThat && Math.hypot(dx,dy)<5) return;   // nguong toi thieu: phan biet voi bam thuong
+    if(!daKeoThat){ daKeoThat=true; el.classList.add('keo'); }
+    const h=b.getBoundingClientRect();
+    el.style.left=(ev.clientX-h.left-kt/2)+'px';
+    el.style.top=(ev.clientY-h.top-kt/2)+'px';
+  };
+  const don=()=>{
+    el.removeEventListener('pointermove',diChuyen);
+    el.removeEventListener('pointerup',ketThuc);
+    el.removeEventListener('pointercancel',huy);
+  };
+  const huy=()=>{ don(); el.classList.remove('keo'); if(daKeoThat) ve(); };
+  const ketThuc=ev=>{
+    don();
+    if(!daKeoThat) return;      // chi la bam: de su kien click tu nhien xu ly nhu cu
+    el.classList.remove('keo');
+    // Luoi an toan: neu vi ly do gi do (thiet bi la) su kien click khong bao
+    // gio toi, co nay se bi ket lai MAI MAI va nuot mat mot cu bam hop le sau
+    // nay. Tu go sau 300ms - du thoi gian cho click that toi truoc do rat nhieu.
+    boQuaClickKeTiep=true;
+    setTimeout(()=>{boQuaClickKeTiep=false;},300);
+    const h=b.getBoundingClientRect();
+    const x=ev.clientX-h.left, y=ev.clientY-h.top;
+    const mr=Math.round((y-LE)/O), mc=Math.round((x-LE)/O);
+    const [br,bc]=tuMH(mr,mc);
+    const mv=hopLe.find(m=>m[0]===r&&m[1]===c&&m[2]===br&&m[3]===bc);
+    if(mv){ chon=null; di(mv); }
+    else ve();                  // tha khong dung o hop le -> quan tu bay ve cho cu
+  };
+  el.addEventListener('pointermove',diChuyen);
+  el.addEventListener('pointerup',ketThuc);
+  el.addEventListener('pointercancel',huy);
 }
 
 function thanh(d){
@@ -732,6 +800,83 @@ async function phanTich(muc){
 const neuTuChoi=()=>{ if(van) phanTich(); };
 function doiCheDo(){ goiY=null; veMuiTen(); neuTuChoi(); }
 
+// --- Luu va khoi phuc van dang choi khi tai lai trang ---------------------
+// Truoc day tai lai trang (F5) la mat trang ban dang choi, phai bam Van moi.
+// Server chi giu van trong bo nho (RAM), khong co CSDL, nen client phai tu
+// nho LICH SU NUOC DI roi choi lai (thay vi luu ca ban co) - vua nhe, vua tu
+// dong dung khop moi thay doi luat sau nay. Dung KEY 'qisheng_van'.
+const KHOA_LUU='qisheng_van';
+
+function luuVan(){
+  try{
+    localStorage.setItem(KHOA_LUU, JSON.stringify({kieu:'nuoc', lichSu,
+      benCam:document.getElementById('benCam').value,
+      cheDo:document.getElementById('cheDo').value,
+      mucDo:document.getElementById('mucDo').value, xoay}));
+  }catch(e){}
+}
+function luuVanFen(fen){
+  try{
+    localStorage.setItem(KHOA_LUU, JSON.stringify({kieu:'fen', fen,
+      benCam:document.getElementById('benCam').value,
+      cheDo:document.getElementById('cheDo').value,
+      mucDo:document.getElementById('mucDo').value, xoay}));
+  }catch(e){}
+}
+
+// So luong quan moi loai luc bat dau, de suy ra quan nao da bi an tu chenh
+// lech voi ban co hien tai - khoi phuc khong biet THU TU an quan, nhung biet
+// CHINH XAC loai va so luong, du de hien thi dung o bang "Quan bi an".
+const DEM_LUC_DAU={R:2,H:2,E:2,A:2,K:1,C:2,P:5,r:2,h:2,e:2,a:2,k:1,c:2,p:5};
+function suyRaBiAn(ban){
+  const dem={};
+  for(const hang of ban) for(const p of hang) if(p!=='.') dem[p]=(dem[p]||0)+1;
+  const ra=[];
+  for(const p in DEM_LUC_DAU){
+    const thieu=DEM_LUC_DAU[p]-(dem[p]||0);
+    for(let i=0;i<thieu;i++) ra.push(p);
+  }
+  return ra;
+}
+
+async function khoiPhucHoacMoi(){
+  let luu=null;
+  try{ luu=JSON.parse(localStorage.getItem(KHOA_LUU)||'null'); }catch(e){}
+  if(!luu){ vanMoi(); return; }
+  document.getElementById('benCam').value=luu.benCam||'trang';
+  document.getElementById('cheDo').value=luu.cheDo||'may';
+  document.getElementById('mucDo').value=luu.mucDo||'vua';
+  xoay=!!luu.xoay;
+  try{
+    let d;
+    if(luu.kieu==='fen' && luu.fen){
+      d=await goi('/api/nap-fen',{fen:luu.fen});
+      if(!d||d.loi) throw new Error(d&&d.loi||'fen loi');
+      van=d.ma_van; lichSu=[]; banTruocNuoc=[]; quanBiAn=suyRaBiAn(d.ban_co.map(h=>h.split('')));
+      vuaDi=null; diemTruoc=505;
+    }else if(luu.kieu==='nuoc'){
+      const moi=await goi('/api/van-moi',{nguoi_cam:luu.benCam||'trang',muc_do:luu.mucDo||'vua'});
+      if(!moi||moi.loi) throw new Error(moi&&moi.loi||'khong tao duoc van moi');
+      d=await goi('/api/lui',{ma_van:moi.ma_van,so_nuoc:0,cac_nuoc:luu.lichSu||[]});
+      if(!d||d.loi) throw new Error(d&&d.loi||'khong khoi phuc duoc');
+      van=moi.ma_van; lichSu=(luu.lichSu||[]).slice(); banTruocNuoc=[];
+      quanBiAn=suyRaBiAn(d.ban_co.map(h=>h.split('')));
+      vuaDi=lichSu.length?lichSu[lichSu.length-1]:null; diemTruoc=505;
+    }else{ vanMoi(); return; }
+    chon=null; goiY=null; phien++;
+    document.getElementById('ds').innerHTML='';
+    document.getElementById('nuocTot').textContent='—';
+    document.getElementById('pv').innerHTML='';
+    cham={trang:null,den:null}; veCham(); veBiAn();
+    capNhat(d); veDs();
+    phanTich();
+  }catch(e){
+    console.error('khoi phuc van cu that bai, bat dau van moi:',e);
+    localStorage.removeItem(KHOA_LUU);
+    vanMoi();
+  }
+}
+
 async function vanMoi(){
   const ben=document.getElementById('benCam').value;
   xoay=(ben==='den');
@@ -746,7 +891,7 @@ async function vanMoi(){
   document.getElementById('nuocTot').textContent='—';
   document.getElementById('pv').innerHTML='';
   cham={trang:null,den:null}; veCham();
-  capNhat(d); veDs(); amThanh('batdau');
+  capNhat(d); veDs(); amThanh('batdau'); luuVan();
   phanTich();
 }
 
@@ -759,6 +904,7 @@ async function di(mv){
   finally{
     dangCho=false;
     lamMoiTrangThai();          // khong bao gio de dong trang thai ket lai
+    luuVan();
   }
 }
 
@@ -833,22 +979,29 @@ async function xinGoiY(){
 
 async function lui(){
   if(!van||dangCho) return;
+  dangCho=true;
   const bo = 1;      // luon lui MOT nuoc, bam nhieu lan de lui tiep
-  const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu});
-  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
-  amThanh('di');                      // lui cung phat tieng nhu khi di
-  lichSu=lichSu.slice(0,Math.max(0,lichSu.length-bo));
-  vuaDi=lichSu.length?lichSu[lichSu.length-1]:null;
-  goiY=null; phien++; chon=null;
-  document.getElementById('vuaDiTxt').textContent=kyHieu(vuaDi);
-  cham={trang:null,den:null}; veCham();
-  capNhat(d); veDs();
-  // Neu lui xong ma den luot MAY thi cho may di, de nguoi choi tiep tuc duoc.
-  // Truoc day lui mot nuoc la ket o luot may va khong choi tiep duoc.
-  if(!tuChoi() && d.trang_thai==='dang_choi' &&
-     d.ben_di!==document.getElementById('benCam').value){
-    setTimeout(()=>mayDi(), 350);
-  } else phanTich();
+  const nuocLui=lichSu[lichSu.length-1];   // nuoc sap bi lui, de choi hoat hinh bay nguoc
+  try{
+    const d=await goi('/api/lui',{ma_van:van,so_nuoc:bo,cac_nuoc:lichSu});
+    if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
+    // Truoc day cap nhat ban co ngay lap tuc, cam giac qua dot ngot. Nay cho
+    // quan BAY NGUOC ve o cu truoc (dung lai ham bay(), chi doi chieu diem
+    // dau/cuoi) roi moi cap nhat trang thai - amThanh() da nam san trong bay().
+    if(nuocLui) await new Promise(r=>bay([nuocLui[2],nuocLui[3],nuocLui[0],nuocLui[1]], r));
+    lichSu=lichSu.slice(0,Math.max(0,lichSu.length-bo));
+    vuaDi=lichSu.length?lichSu[lichSu.length-1]:null;
+    goiY=null; phien++; chon=null;
+    document.getElementById('vuaDiTxt').textContent=kyHieu(vuaDi);
+    cham={trang:null,den:null}; veCham();
+    capNhat(d); veDs(); luuVan();
+    // Neu lui xong ma den luot MAY thi cho may di, de nguoi choi tiep tuc duoc.
+    // Truoc day lui mot nuoc la ket o luot may va khong choi tiep duoc.
+    if(!tuChoi() && d.trang_thai==='dang_choi' &&
+       d.ben_di!==document.getElementById('benCam').value){
+      setTimeout(()=>mayDi(), 350);
+    } else phanTich();
+  } finally { dangCho=false; }
 }
 
 // Cho may di mot nuoc (dung sau khi lui ve dung luot may)
@@ -870,7 +1023,7 @@ async function mayDi(){
       document.getElementById('vuaDiTxt').textContent=
         ghiNuoc(d.nuoc_may, banTruocNuoc[banTruocNuoc.length-1]||banCo);
     }
-    capNhat(d); veDs();
+    capNhat(d); veDs(); luuVan();
   } finally { dangCho=false; lamMoiTrangThai(); }
   phanTich();
 }
@@ -880,9 +1033,11 @@ async function napFen(){
   if(!f) return;
   const d=await goi('/api/nap-fen',{fen:f});
   if(d.loi){ document.getElementById('ttVan').textContent='⚠ '+d.loi; return; }
-  van=d.ma_van; chon=null; goiY=null; lichSu=[]; vuaDi=null; phien++;
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; quanBiAn=[]; banTruocNuoc=[]; vuaDi=null; phien++;
   document.getElementById('ds').innerHTML='';
+  veBiAn();
   capNhat(d);
+  luuVanFen(f);
   phanTich();
 }
 
@@ -927,7 +1082,17 @@ const doiNen=()=>datNen(
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
 veBan();
-vanMoi();
+khoiPhucHoacMoi();
+
+// Mui ten TRAI = lui mot nuoc, giong nut "Lui". Bo qua khi dang go trong o
+// nhap (FEN) hoac chon trong danh sach, de khong pha thao tac go chu binh thuong.
+document.addEventListener('keydown', e=>{
+  if(e.key!=='ArrowLeft') return;
+  const te=(document.activeElement||{}).tagName;
+  if(te==='INPUT'||te==='SELECT'||te==='TEXTAREA') return;
+  e.preventDefault();
+  lui();
+});
 </script>
 </body>
 </html>

@@ -346,13 +346,20 @@ class May(http.server.SimpleHTTPRequestHandler):
         })
 
     def _lui(self, req):
-        """Lui lai mot hoac hai nuoc. Dung lai van tu dau cho don gian va chac."""
+        """Lui lai mot hoac nhieu nuoc. Dung lai van tu dau cho don gian va chac.
+
+        so_nuoc=0 la truong hop dac biet: phat lai TOAN BO cac_nuoc khong bo
+        gi ca. Dung khi web client KHOI PHUC van dang choi sau khi tai lai
+        trang (F5) - client chi luu duoc danh sach nuoc di (khong co CSDL o
+        server), nen phai tao van moi roi "lui 0 nuoc" voi ca lich su de dung
+        lai dung trang thai cu.
+        """
         ma = req.get("ma_van")
         with _khoa:
             v = _van.get(ma)
         if v is None:
             return self._tra({"loi": "khong tim thay van"}, 404)
-        so_lui = max(1, int(req.get("so_nuoc", 1)))
+        so_lui = max(0, int(req.get("so_nuoc", 1)))
         cac_nuoc = req.get("cac_nuoc", [])
         giu = cac_nuoc[:max(0, len(cac_nuoc) - so_lui)]
         moi = VanCo()
