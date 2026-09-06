@@ -32,8 +32,10 @@
   html[data-nen="sang"] .nhan{background:#eae6de;color:#374151}
   html[data-nen="sang"] .ds span:not(:first-child){color:#374151}
   html[data-nen="sang"] .mo2{color:#6b7280}
-  html[data-nen="sang"] .thanh{background:#d8d4cc}
-  html[data-nen="sang"] .thanh-tren{color:#fff}
+  /* Thanh danh gia GIU NGUYEN mau dam/sang o ca hai giao dien - no la thang
+     diem rieng (nhu chess.com), khong phai noi dung trang nen khong doi theo
+     sang/toi. Chi them vien de tach voi nen trang sang. */
+  html[data-nen="sang"] .thanh{border-color:#c7c2b6}
   html[data-nen="sang"] .pv .n-den{color:#374151}
   *{box-sizing:border-box}
   body{margin:0;background:var(--nen);color:var(--chu);
@@ -507,23 +509,40 @@ function ve(){
 
 // Mui ten CHI ve khi nguoi choi chu dong bam nut Goi y. Phan tich tu dong sau
 // moi nuoc khong ve, vi luc truoc mui ten hien lien tuc lam che quan va roi mat.
+function _mot_mui_ten(mv, mau, do_day, do_mo, kt){
+  const [a0,b0]=raMH(mv[0],mv[1]), [a1,b1]=raMH(mv[2],mv[3]);
+  const x1=LE+b0*O, y1=LE+a0*O, x2=LE+b1*O, y2=LE+a1*O;
+  const dx=x2-x1, dy=y2-y1, d=Math.hypot(dx,dy)||1, lui=O*.34;
+  const ex=x2-dx/d*lui, ey=y2-dy/d*lui;
+  const id='dau'+Math.random().toString(36).slice(2);
+  return `<defs><marker id="${id}" markerWidth="4" markerHeight="4"
+    refX="2.2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/>
+    </marker></defs><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"
+    stroke="${mau}" stroke-width="${do_day}" stroke-linecap="round"
+    marker-end="url(#${id})" opacity="${do_mo}"/>`;
+}
+
 function veMuiTen(){
   const b=document.getElementById('ban');
   b.querySelectorAll('.mui-ten').forEach(e=>e.remove());
   if(!goiY || !choMuiTen) return;
-  const [a0,b0]=raMH(goiY[0],goiY[1]), [a1,b1]=raMH(goiY[2],goiY[3]);
-  const x1=LE+b0*O, y1=LE+a0*O, x2=LE+b1*O, y2=LE+a1*O;
-  const dx=x2-x1, dy=y2-y1, d=Math.hypot(dx,dy)||1, lui=O*.34;
-  const ex=x2-dx/d*lui, ey=y2-dy/d*lui;
-  const mau=benDi==='trang'?'#e74c3c':'#4a9eff';
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('class','mui-ten');
   svg.setAttribute('width',LE*2+O*8); svg.setAttribute('height',LE*2+O*9+16);
-  svg.innerHTML=`<defs><marker id="dau" markerWidth="4" markerHeight="4"
-    refX="2.2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/>
-    </marker></defs><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"
-    stroke="${mau}" stroke-width="6" stroke-linecap="round"
-    marker-end="url(#dau)" opacity=".62"/>`;
+  let noi_dung='';
+  // Che do tu choi hai nguoi: ve them toi 3 nuoc du doan tiep theo bang mau
+  // XANH NHAT mo dan, de nguoi choi nhin thang tren ban thay duoc du doan
+  // thay vi phai doc chu bien chinh ben canh - do "4 nuoc di tiep theo".
+  if(tuChoi() && phanTichCuoi && phanTichCuoi.bien_chinh &&
+     phanTichCuoi.bien_chinh.length>1){
+    const tiep=phanTichCuoi.bien_chinh.slice(1,4);
+    tiep.forEach((mv,i)=>{
+      noi_dung+=_mot_mui_ten(mv, '#7dd3fc', 4.5, .55-i*.14, null);
+    });
+  }
+  const mau=benDi==='trang'?'#e74c3c':'#4a9eff';
+  noi_dung+=_mot_mui_ten(goiY, mau, 6, .62, null);
+  svg.innerHTML=noi_dung;
   b.appendChild(svg);
 }
 
