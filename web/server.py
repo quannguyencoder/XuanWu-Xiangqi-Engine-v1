@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.dirname(THU_MUC))
 from engine.board import WHITE, BLACK, start_board
 from engine import c_core, book
 from engine.evaluate import evaluate as danh_gia_tinh
-from engine.game_rules import VanCo, DANG_CHOI
+from engine.game_rules import VanCo, DANG_CHOI, TRANG_THANG, DEN_THANG
 from engine import strongest
 from tools.collect_openings import board_to_fen, fen_to_board
 
@@ -98,6 +98,51 @@ def _dia_chi_lan(cong):
         return f"http://{ip}:{cong}/"
     except Exception:
         return None
+
+
+def _tranh_tu_thua(v: VanCo, nuoc, giay: float):
+    """Doi nuoc khac neu nuoc engine chon khien chinh no bi xu THUA.
+
+    Engine tim kiem chi biet the co roi rac, khong biet luat chieu lien tuc -
+    luat do phu thuoc LICH SU van co. Nen o muc de (0,5 giay) no hay chieu di
+    chieu lai roi tu thua ma khong hieu tai sao.
+
+    Cach chua: thu nuoc engine chon, neu ket qua la chinh no thua thi bo va lay
+    nuoc tot ke tiep. Thu toi da 6 nuoc roi danh chiu.
+    """
+    if nuoc is None:
+        return None
+    minh = v.side
+    thua_cua_minh = DEN_THANG if minh == WHITE else TRANG_THANG
+
+    def tu_thua(mv):
+        thu = VanCo(v.board, v.side)
+        thu.lich_su = list(v.lich_su)
+        thu.tu_lan_an_quan = v.tu_lan_an_quan
+        try:
+            thu.di(mv)
+        except ValueError:
+            return True
+        return thu.trang_thai()[0] == thua_cua_minh
+
+    if not tu_thua(nuoc):
+        return nuoc
+    # Nuoc tot nhat tu thua -> xep hang cac nuoc con lai theo diem, lay nuoc dau
+    # tien khong tu thua.
+    con_lai = [m for m in v.nuoc_hop_le() if m != nuoc and not tu_thua(m)]
+    if not con_lai:
+        return nuoc                       # moi nuoc deu thua, danh chiu
+    tot, diem_tot = con_lai[0], None
+    with _khoa_engine:
+        for m in con_lai[:6]:
+            con = VanCo(v.board, v.side)
+            con.di(m)
+            d, _, _ = strongest.tim_nuoc_di(con.board, con.side, depth=4,
+                                            dung_sach=False)
+            # minh la Trang thi muon diem CAO, la Den thi muon diem THAP
+            if diem_tot is None or (d > diem_tot if minh == WHITE else d < diem_tot):
+                tot, diem_tot = m, d
+    return tot
 
 
 class May(http.server.SimpleHTTPRequestHandler):
@@ -193,6 +238,7 @@ class May(http.server.SimpleHTTPRequestHandler):
         with _khoa_engine:
             diem, nuoc_may, nut, do_sau = strongest.tim_nuoc_di_theo_gio(
                 v.board, v.side, giay)
+        nuoc_may = _tranh_tu_thua(v, nuoc_may, giay)
         if nuoc_may is None:
             return self._tra({**_ban_co_json(v), "diem": _cham_diem(v),
                               "nuoc_may": None})

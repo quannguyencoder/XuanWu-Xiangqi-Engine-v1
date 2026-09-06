@@ -165,10 +165,6 @@
         <input class="fen" id="oFen" placeholder="FEN">
         <button onclick="napFen()" id="bFen" style="flex:0 0 90px">Nạp FEN</button>
       </div>
-      <div class="hang" style="margin-top:2px">
-        <button onclick="window.open('am-thanh.html','_blank')"
-                style="font-size:12.5px">🔊 Chọn âm thanh</button>
-      </div>
       <div class="chia" id="chiaSe"></div>
     </div>
 
@@ -254,8 +250,9 @@ const MAC_DINH={di:'sound-move.wav',   an:'sound-capture.wav',
                 chieu:'sound-check.wav', batdau:'sound-start.wav',
                 win:'sound-win.wav',   thua:'sound-lose.wav',
                 hoa:'sound-start.wav', het:'sound-win.wav'};
-const gan=JSON.parse(localStorage.getItem('am_gan')||'{}');
-for(const [so,sk] of Object.entries(gan)) MAC_DINH[sk]=`am${so}.wav`;
+// Xoa lua chon cu neu con: no tro toi cac tep am1..am10 da bi xoa sau khi
+// gan co dinh, va se lam mat het am thanh.
+localStorage.removeItem('am_gan');
 for(const [k,f] of Object.entries(MAC_DINH)){
   const a=new Audio(f); a.preload='auto'; a.load(); TEP[k]=a;
 }
