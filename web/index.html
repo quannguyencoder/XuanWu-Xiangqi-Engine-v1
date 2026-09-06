@@ -246,8 +246,8 @@ const TEN_QUAN_DO={       // ky hieu ghi nuoc, ben Do
 };
 const TEN_DAY={           // ten day du, dung o phan giai thich
   vi:{R:'Xe',H:'Mã',E:'Tượng',A:'Sĩ',K:'Tướng / Soái',C:'Pháo',P:'Tốt / Binh'},
-  en:{R:'Chariot (Rook)',H:'Horse (Knight)',E:'Elephant',A:'Advisor',
-      K:'General',C:'Cannon',P:'Soldier (Pawn)'},
+  en:{R:'Chariot (Rook)',H:'Horse (Knight)',E:'Elephant (Bishop)',
+      A:'Advisor (Guard)',K:'General (King)',C:'Cannon',P:'Soldier (Pawn)'},
   zh:{R:'車 / 俥',H:'馬 / 傌',E:'象 / 相',A:'士 / 仕',K:'將 / 帥',
       C:'砲 / 炮',P:'卒 / 兵'},
 };
@@ -346,8 +346,11 @@ function veLuat(){
       <div class="bieu d">${TEN[k][1]}</div>
       <div class="bieu n">${TEN[k][0]}</div>
       <div class="mo-ta"><b>${TEN_DAY[nn][k]}</b>
-        <span class="kh">${T.ky_hieu}: <code>${TEN_QUAN_DO[nn][k]}</code> /
-          <code>${TEN_QUAN[nn][k]}</code></span>
+        <span class="kh">
+          ${T.ky_hieu}: <code>${TEN[k][1]}</code> <code>${TEN[k][0]}</code>
+          &nbsp;·&nbsp; ${T.ghi_nuoc}:
+          <code>${TEN_QUAN_DO[nn][k]}</code> <code>${TEN_QUAN[nn][k]}</code>
+        </span>
         <span>${T['q_'+k]}</span></div>
     </div>`).join('');
   document.getElementById('dsLuat').innerHTML =
