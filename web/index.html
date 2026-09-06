@@ -72,12 +72,13 @@
 
   h2{margin:0 0 9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
      color:var(--mo);font-weight:600}
-  .nuoc-to{font-size:23px;font-weight:700;color:var(--xanh);
-           font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .nuoc-to{font-size:22px;font-weight:700;color:var(--xanh);letter-spacing:0}
   .pv{font-size:12.5px;margin-top:4px}
   .pv-d{color:var(--mo);font-size:11.5px;letter-spacing:.04em;
         text-transform:uppercase}
-  .pv-n{color:var(--chu);line-height:2;margin-top:3px}
+  .pv-n{color:var(--chu);line-height:1.95;margin-top:3px;
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+        letter-spacing:0}
   .pv .mt{color:#6b7280;margin:0 2px}
   .pv b{color:var(--chu)}
   .ky{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;font-size:13px}
@@ -91,7 +92,7 @@
   button.chinh:hover{background:#d0432f}
   .hang{display:flex;gap:7px;margin-bottom:8px}
   .hang>*{flex:1;min-width:0}
-  .ds{font-size:13px;max-height:200px;overflow-y:auto;
+  .ds{font-size:13px;max-height:150px;overflow-y:auto;
       font-variant-numeric:tabular-nums;line-height:1.85}
   .ds div{display:flex;gap:10px}
   .ds span:first-child{color:var(--mo);width:26px;flex-shrink:0}
@@ -109,6 +110,8 @@
         font-family:ui-monospace,Menlo,monospace}
 
   /* Phan luat choi o duoi, trai het be ngang trang */
+  .duoi{max-width:1500px;margin:0 auto;padding:0 18px;display:grid;
+        grid-template-columns:1fr 1fr;gap:12px}
   .luat{max-width:1500px;margin:0 auto;padding:0 18px 40px}
   .luat h2{font-size:12px;margin:22px 0 12px}
   .bang-quan{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
@@ -204,15 +207,17 @@
       <div class="chia" id="chiaSe"></div>
     </div>
 
-    <div class="the">
-      <h2 id="tBiAn">Quân bị ăn</h2>
-      <div id="biAn" style="font-size:22px;line-height:1.5;min-height:34px">—</div>
-    </div>
+  </div>
+</div>
 
-    <div class="the">
-      <h2 id="tNuocDaDi">Nước đã đi</h2>
-      <div class="ds" id="ds"></div>
-    </div>
+<div class="duoi">
+  <div class="the">
+    <h2 id="tBiAn">Quân bị ăn</h2>
+    <div id="biAn" style="min-height:38px">—</div>
+  </div>
+  <div class="the">
+    <h2 id="tNuocDaDi">Nước đã đi</h2>
+    <div class="ds" id="ds"></div>
   </div>
 </div>
 
@@ -400,14 +405,22 @@ function veBan(){
   //   ben Do dem tu PHAI sang trai bang so Han  九八七六五四三二一
   //   ben Den dem tu TRAI sang phai bang so Arab 1 2 3 ... 9
   // Khong danh so hang, vi cach ghi nuoc di cua co tuong khong dung so hang.
-  const HAN=['一','二','三','四','五','六','七','八','九'];
+  // Ca hai ben dung SO THUONG cho de doc. Ben duoi dem theo goc nhin ben duoi,
+  // ben tren theo goc nhin ben tren - dung quy uoc co tuong nhung khong dung
+  // so Han vi kho doc voi nguoi khong biet chu Han.
   for(let c=0;c<9;c++){
-    const soDo = HAN[8-c], soDen = c+1;
-    const duoi = xoay ? soDen : soDo, tren = xoay ? soDo : soDen;
-    s+=`<text x="${LE+c*O}" y="${LE+9*O+44}" fill="#a5342a" font-size="16"
-        text-anchor="middle" font-family="serif" font-weight="600">${duoi}</text>`;
-    s+=`<text x="${LE+c*O}" y="${LE-26}" fill="#5a4632" font-size="14"
-        text-anchor="middle" font-weight="600">${tren}</text>`;
+    const duoi = xoay ? c+1 : 9-c, tren = xoay ? 9-c : c+1;
+    s+=`<text x="${LE+c*O}" y="${LE+9*O+42}" fill="#a5342a" font-size="15"
+        text-anchor="middle" font-weight="700">${duoi}</text>`;
+    s+=`<text x="${LE+c*O}" y="${LE-24}" fill="#5a4632" font-size="15"
+        text-anchor="middle" font-weight="700">${tren}</text>`;
+  }
+  // Danh so hang o hai ben de de doc toa do
+  for(let r=0;r<10;r++){
+    const nhan = xoay ? r+1 : 10-r;
+    for(const x of [LE-26, LE+8*O+26])
+      s+=`<text x="${x}" y="${LE+r*O+5}" fill="#8a7355" font-size="13"
+          text-anchor="middle">${nhan}</text>`;
   }
   s+=`<text x="${LE+1.9*O}" y="${LE+4.62*O}" fill="var(--luoi)" font-size="21"
       font-family="serif" opacity=".75">楚河</text>
@@ -566,7 +579,7 @@ function capNhat(d){
                                      : (TEP.thua?'thua':'het')));
   }else{
     t.innerHTML = tuChoi()
-      ? `${T.luot_cua} <b>${d.ben_di==='trang'?'Đỏ':'Đen'}</b>`
+      ? `${T.luot_cua} <b>${d.ben_di==='trang'?T.do_:T.den_}</b>`
       : (d.ben_di===minh?T.den_luot:T.may_nghi);
     // Khong co am rieng cho chieu tuong: no xay ra lien tuc trong van, va
     // thanh trang thai da bao bang chu do roi.
@@ -577,7 +590,8 @@ function capNhat(d){
 
 function hienPhanTich(p){
   if(p.nuoc_tot){
-    document.getElementById('benTot').textContent=p.ben_di==='trang'?'Đỏ':'Đen';
+    document.getElementById('benTot').textContent=
+      p.ben_di==='trang'?T.do_:T.den_;
     document.getElementById('nuocTot').textContent=ghiNuoc(p.nuoc_tot, banCo);
     // Bien chinh: moi nuoc doi tren ban co da di cac nuoc truoc do, nen phai
     // mo phong tung buoc thi ky hieu moi dung.
@@ -677,7 +691,7 @@ function lamMoiTrangThai(){
   if(t.innerHTML.includes('⚠')) return;
   const minh=document.getElementById('benCam').value;
   t.innerHTML = tuChoi()
-    ? `${T.luot_cua} <b>${benDi==='trang'?'Đỏ':'Đen'}</b>`
+    ? `${T.luot_cua} <b>${benDi==='trang'?T.do_:T.den_}</b>`
     : (benDi===minh ? T.den_luot : T.may_nghi);
 }
 
@@ -699,12 +713,14 @@ async function _di(mv){
     lichSu.pop(); banTruocNuoc.pop();   // bo nuoc chua duoc may chu ghi nhan
     return;
   }
+  // Cham RIENG cho tung ben: nguoi choi can thay danh gia nuoc CUA MINH chu
+  // khong bi nuoc cua may ghi de ngay sau do.
   const dc=d.diem_nuoc_nguoi??d.diem;
-  if(dc!==undefined){
-    const c=chamNuoc(diemTruoc,dc,benTruoc);
-    document.getElementById('chamNuoc').innerHTML=
-      ` · <b style="color:${c.m}">${c.t}</b> <span style="color:var(--mo)">${c.l>=0?'+':''}${c.l}</span>`;
-  }
+  if(dc!==undefined) cham[benTruoc]=chamNuoc(diemTruoc,dc,benTruoc);
+  if(d.nuoc_may && d.diem!==undefined)
+    cham[benTruoc==='trang'?'den':'trang']=
+      chamNuoc(dc, d.diem, benTruoc==='trang'?'den':'trang');
+  veCham();
   if(d.nuoc_may){
     const [rr,cc]=[d.nuoc_may[2],d.nuoc_may[3]];
     if(banCo[rr][cc]!=='.'){ quanBiAn.push(banCo[rr][cc]); veBiAn(); }
@@ -730,7 +746,7 @@ async function xinGoiY(){
     muc_do:document.getElementById('mucDo').value});
   if(p!==phien||!d||d.loi){ document.getElementById('nuocTot').textContent='—'; return; }
   if(d.nuoc){ goiY=d.nuoc; veMuiTen();
-    document.getElementById('benTot').textContent=d.ben==='trang'?'Đỏ':'Đen';
+    document.getElementById('benTot').textContent=d.ben==='trang'?T.do_:T.den_;
     document.getElementById('nuocTot').textContent=
       ghiNuoc(d.nuoc, banCo); }
   if(d.diem!==undefined) thanh(d.diem);

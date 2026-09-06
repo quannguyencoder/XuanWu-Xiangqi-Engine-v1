@@ -240,6 +240,12 @@ class May(http.server.SimpleHTTPRequestHandler):
                               "diem_nuoc_nguoi": d, "nuoc_may": None})
 
         # 2. May tra loi
+        # The co khoi dau: chot 505, khong de tim kiem ghi de moc chuan
+        if len(v.lich_su) == 1 and v.side == WHITE:
+            return self._tra({**goc, "diem": 505, "diem_tinh": 505,
+                              "nuoc_tot": None, "bien_chinh": [],
+                              "do_sau": 0, "so_nut": 0, "giay": 0,
+                              "nut_moi_giay": 0, "trong_sach": True})
         giay = MUC_DO.get(req.get("muc_do", "vua"), 3.0)
         t0 = time.time()
         with _khoa_engine:
