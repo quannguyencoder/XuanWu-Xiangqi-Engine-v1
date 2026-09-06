@@ -74,8 +74,11 @@
      color:var(--mo);font-weight:600}
   .nuoc-to{font-size:23px;font-weight:700;color:var(--xanh);
            font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .pv{color:var(--mo);font-size:12.5px;line-height:1.9;
-      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+  .pv{font-size:12.5px;margin-top:4px}
+  .pv-d{color:var(--mo);font-size:11.5px;letter-spacing:.04em;
+        text-transform:uppercase}
+  .pv-n{color:var(--chu);line-height:2;margin-top:3px}
+  .pv .mt{color:#6b7280;margin:0 2px}
   .pv b{color:var(--chu)}
   .ky{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;font-size:13px}
   .ky span:nth-child(odd){color:var(--mo)}
@@ -217,13 +220,16 @@
   <h2 id="tCachDi">Cách đi quân</h2>
   <p style="color:var(--mo);font-size:13px;margin:-4px 0 12px" id="tGhiChu"></p>
   <div class="bang-quan" id="bangQuan"></div>
+  <h2 id="tCachGhi">Cách ghi nước đi</h2>
+  <div class="ds-luat" id="cachGhi"></div>
+
   <h2 id="tLuatDacBiet">Luật đặc biệt</h2>
   <div class="ds-luat" id="dsLuat"></div>
 </div>
 
 <script src="lang.js"></script>
 <script>
-const O=72, LE=44;   // o to hon + le rong cho so toa do
+const O=72, LE=60;   // le 60 de so cot khong bi quan co (ban kinh 29,5px) che
 const TEN={R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
            K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
 let van=null, banCo=null, chon=null, hopLe=[], vuaDi=null, dangCho=false;
@@ -363,13 +369,19 @@ function veLuat(){
         </span>
         <span>${T['q_'+k]}</span></div>
     </div>`).join('');
+  document.getElementById('tCachGhi').textContent = T.cach_ghi;
+  document.getElementById('cachGhi').innerHTML =
+    [['g_tan','g_tan_t'],['g_thoai','g_thoai_t'],['g_binh','g_binh_t']]
+      .map(([a,b])=>`<div class="y"><b>${T[a]}</b> — ${T[b]}</div>`).join('')
+    + `<div class="y">${T.g_cot}</div>`
+    + `<div class="y"><b>${T.vd}</b><br>${T.vd1}<br>${T.vd2}<br>${T.vd3}</div>`;
   document.getElementById('dsLuat').innerHTML =
     ['l1','l2','l3','l4','l5','l6','l7','l8','l9'].map((k,i)=>
       `<div class="y"><b>${i+1}.</b> ${T[k]}</div>`).join('');
 }
 
 function veBan(){
-  const w=LE*2+O*8, h=LE*2+O*9+20;   // chua cho so cot o tren va duoi
+  const w=LE*2+O*8, h=LE*2+O*9+16;
   let s=`<svg width="${w}" height="${h}">`;
   for(let r=0;r<10;r++) s+=`<line x1="${LE}" y1="${LE+r*O}" x2="${LE+8*O}"
     y2="${LE+r*O}" stroke="var(--luoi)" stroke-width="1.4"/>`;
@@ -392,10 +404,10 @@ function veBan(){
   for(let c=0;c<9;c++){
     const soDo = HAN[8-c], soDen = c+1;
     const duoi = xoay ? soDen : soDo, tren = xoay ? soDo : soDen;
-    s+=`<text x="${LE+c*O}" y="${LE+9*O+27}" fill="#b03a2e" font-size="15"
-        text-anchor="middle" font-family="serif" opacity=".95">${duoi}</text>`;
-    s+=`<text x="${LE+c*O}" y="${LE-16}" fill="#4a4a4a" font-size="13"
-        text-anchor="middle" opacity=".9">${tren}</text>`;
+    s+=`<text x="${LE+c*O}" y="${LE+9*O+44}" fill="#a5342a" font-size="16"
+        text-anchor="middle" font-family="serif" font-weight="600">${duoi}</text>`;
+    s+=`<text x="${LE+c*O}" y="${LE-26}" fill="#5a4632" font-size="14"
+        text-anchor="middle" font-weight="600">${tren}</text>`;
   }
   s+=`<text x="${LE+1.9*O}" y="${LE+4.62*O}" fill="var(--luoi)" font-size="21"
       font-family="serif" opacity=".75">楚河</text>
@@ -454,7 +466,7 @@ function veMuiTen(){
   const mau=benDi==='trang'?'#e74c3c':'#4a9eff';
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('class','mui-ten');
-  svg.setAttribute('width',LE*2+O*8); svg.setAttribute('height',LE*2+O*9+20);
+  svg.setAttribute('width',LE*2+O*8); svg.setAttribute('height',LE*2+O*9+16);
   svg.innerHTML=`<defs><marker id="dau" markerWidth="4" markerHeight="4"
     refX="2.2" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="${mau}"/>
     </marker></defs><line x1="${x1}" y1="${y1}" x2="${ex}" y2="${ey}"
@@ -574,9 +586,12 @@ function hienPhanTich(p){
       bcs.push(ghiNuoc(m, mo));
       mo[m[2]][m[3]]=mo[m[0]][m[1]]; mo[m[0]][m[1]]='.';
     }
-    const bc=bcs.join('  ');
+    const bc=bcs.join(' <span class="mt">→</span> ');
     document.getElementById('pv').innerHTML = bc
-      ? `${T.bien_chinh}: <b>${bc}</b><br>${T.neu_di} ${ghiNuoc(p.nuoc_tot, banCo)} → ${T.diem_thanh} ${p.diem}`
+      ? `<div class="pv-d">${T.bien_chinh}</div><div class="pv-n">${bc}</div>
+         <div class="pv-d" style="margin-top:6px">${T.neu_di}
+           <b>${ghiNuoc(p.nuoc_tot, banCo)}</b> → ${T.diem_thanh}
+           <b>${p.diem}</b></div>`
       : '';
     goiY=p.nuoc_tot; veMuiTen();
   }
