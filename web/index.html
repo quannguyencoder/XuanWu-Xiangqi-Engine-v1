@@ -350,7 +350,13 @@ function datNN(m){
   document.getElementById('mucDo').title = T.giai_thich_muc;
   dat('benCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]]);
   localStorage.setItem('nn',m);
-  veLuat(); veCham();
+  veLuat(); veCham(); veDs(); veBiAn();
+  // Ve lai o phan tich bang ngon ngu moi. Khong co dong nay thi noi dung cu
+  // (nuoc di, bien chinh, nhan) van giu nguyen ngon ngu luc no duoc tao ra.
+  if(phanTichCuoi) hienPhanTich(phanTichCuoi);
+  if(vuaDi) document.getElementById('vuaDiTxt').textContent=
+    ghiNuoc(vuaDi, banTruocNuoc[banTruocNuoc.length-1]);
+  lamMoiTrangThai();
   if(banCo) veLai();
 }
 
@@ -589,13 +595,18 @@ function capNhat(d){
 }
 
 function hienPhanTich(p){
+  phanTichCuoi=p;
+  // Luu ban co cua chinh the co da phan tich: khi doi ngon ngu va ve lai,
+  // banCo co the da khac neu nguoi choi da di tiep.
+  if(p.ban_co && !p._ban) p._ban=p.ban_co.map(h=>h.split(''));
+  const B=p._ban||banCo;
   if(p.nuoc_tot){
     document.getElementById('benTot').textContent=
       p.ben_di==='trang'?T.do_:T.den_;
-    document.getElementById('nuocTot').textContent=ghiNuoc(p.nuoc_tot, banCo);
+    document.getElementById('nuocTot').textContent=ghiNuoc(p.nuoc_tot, B);
     // Bien chinh: moi nuoc doi tren ban co da di cac nuoc truoc do, nen phai
     // mo phong tung buoc thi ky hieu moi dung.
-    let mo=banCo.map(h=>h.slice()), bcs=[];
+    let mo=B.map(h=>h.slice()), bcs=[];
     for(const m of (p.bien_chinh||[])){
       bcs.push(ghiNuoc(m, mo));
       mo[m[2]][m[3]]=mo[m[0]][m[1]]; mo[m[0]][m[1]]='.';
@@ -604,7 +615,7 @@ function hienPhanTich(p){
     document.getElementById('pv').innerHTML = bc
       ? `<div class="pv-d">${T.bien_chinh}</div><div class="pv-n">${bc}</div>
          <div class="pv-d" style="margin-top:6px">${T.neu_di}
-           <b>${ghiNuoc(p.nuoc_tot, banCo)}</b> → ${T.diem_thanh}
+           <b>${ghiNuoc(p.nuoc_tot, B)}</b> → ${T.diem_thanh}
            <b>${p.diem}</b></div>`
       : '';
     goiY=p.nuoc_tot; veMuiTen();
@@ -635,6 +646,7 @@ async function goi(duong, than, giay=45){
 }
 
 let dangPhanTich=false;
+let phanTichCuoi=null;      // nho de ve lai khi doi ngon ngu
 async function phanTich(muc){
   // Chi cho MOT yeu cau phan tich chay mot luc. Neu khong, nguoi choi di nhanh
   // se xep hang hang loat yeu cau, moi cai giu khoa engine o may chu va lam
