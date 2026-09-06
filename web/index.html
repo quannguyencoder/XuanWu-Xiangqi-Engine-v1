@@ -6,11 +6,21 @@
 <title>XuanWu 玄武 — Xiangqi</title>
 <link rel="icon" href="mascot.png">
 <style>
-  :root{
+  :root{                       /* giao dien TOI, mac dinh */
     --go:#dfb87f; --luoi:#8b5e34; --do:#c0392b; --den:#1c1c1c;
     --nen:#16181d; --the:#20242b; --vien:#2f343d;
-    --chu:#e8e6e3; --mo:#8b909a; --xanh:#4ade80;
+    --chu:#e8e6e3; --mo:#8b909a; --xanh:#4ade80; --nut:#2b3038; --nut-hv:#343a44;
   }
+  /* Giao dien SANG. Ban co giu nguyen mau go that o ca hai che do - doi mau go
+     se lam quan co mat do tuong phan von co cua no. */
+  html[data-nen="sang"]{
+    --nen:#f4f2ee; --the:#ffffff; --vien:#dcd8d0;
+    --chu:#1f2328; --mo:#6b7280; --xanh:#15803d; --nut:#f0eeea; --nut-hv:#e5e2dc;
+  }
+  html[data-nen="sang"] .the{box-shadow:0 1px 3px #0000000f}
+  html[data-nen="sang"] .thanh{background:#d8d4cc}
+  html[data-nen="sang"] .thanh-tren{color:#fff}
+  html[data-nen="sang"] .pv .n-den{color:#374151}
   *{box-sizing:border-box}
   body{margin:0;background:var(--nen);color:var(--chu);
        font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -55,7 +65,7 @@
                  50%{transform:scale(1.08);opacity:.6}}
   .mui-ten{position:absolute;inset:0;pointer-events:none;z-index:5}
 
-  .ben{width:380px;display:flex;flex-direction:column;gap:12px}
+  .ben{width:460px;display:flex;flex-direction:column;gap:12px}
   .the{background:var(--the);border:1px solid var(--vien);border-radius:10px;padding:15px}
   .dau{display:flex;align-items:center;gap:12px}
   .dau img{width:44px;height:44px;border-radius:9px}
@@ -68,7 +78,7 @@
   .diem-to{font-size:44px;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}
   .diem-to small{font-size:15px;color:var(--mo);font-weight:400}
   .nhan{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;
-        background:#3a3f49;color:var(--chu);margin-top:9px}
+        background:var(--nut);color:var(--chu);margin-top:9px}
 
   h2{margin:0 0 9px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
      color:var(--mo);font-weight:600}
@@ -79,15 +89,17 @@
   .pv-n{color:var(--chu);line-height:1.95;margin-top:3px;
         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
         letter-spacing:0}
-  .pv .mt{color:#6b7280;margin:0 2px}
+  .pv .mt{color:var(--mo);margin:0 2px;opacity:.6}
+  .pv .n-do{color:#ff7a6b;font-weight:600}
+  .pv .n-den{color:var(--chu)}
   .pv b{color:var(--chu)}
   .ky{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;font-size:13px}
   .ky span:nth-child(odd){color:var(--mo)}
   .ky span:nth-child(even){font-variant-numeric:tabular-nums}
 
-  button,select,input{font-family:inherit;font-size:13.5px;background:#2b3038;
+  button,select,input{font-family:inherit;font-size:13.5px;background:var(--nut);
         border:1px solid var(--vien);color:var(--chu);border-radius:7px;padding:8px}
-  button{cursor:pointer} button:hover{background:#343a44}
+  button{cursor:pointer} button:hover{background:var(--nut-hv)}
   button.chinh{background:var(--do);border-color:var(--do);font-weight:600}
   button.chinh:hover{background:#d0432f}
   .hang{display:flex;gap:7px;margin-bottom:8px}
@@ -126,7 +138,7 @@
   .mo-ta b{display:block;margin-bottom:2px;font-size:14px}
   .mo-ta span{color:var(--mo);font-size:13px;line-height:1.55;display:block}
   .mo-ta .kh{font-size:11.5px;margin-bottom:4px;color:#7a8090}
-  .mo-ta code{background:#2b3038;padding:1px 6px;border-radius:4px;color:#dfe3ea;
+  .mo-ta code{background:var(--nut);padding:1px 6px;border-radius:4px;color:var(--chu);
               font-family:ui-monospace,Menlo,monospace}
   .ds-luat{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
            gap:9px}
@@ -158,6 +170,7 @@
         <button onclick="datNN('vi')" id="nnvi" class="on">VI</button>
         <button onclick="datNN('en')" id="nnen">EN</button>
         <button onclick="datNN('zh')" id="nnzh">中</button>
+        <button onclick="doiNen()" id="nutNen" title="Sáng / Tối">🌙</button>
       </div>
     </div>
 
@@ -606,9 +619,12 @@ function hienPhanTich(p){
     document.getElementById('nuocTot').textContent=ghiNuoc(p.nuoc_tot, B);
     // Bien chinh: moi nuoc doi tren ban co da di cac nuoc truoc do, nen phai
     // mo phong tung buoc thi ky hieu moi dung.
+    // To mau theo ben di. Can vi hai ben danh so cot NGUOC NHAU nen Ma Do va
+    // Ma Den co the ra cung mot ky hieu - nhin lien nhau tuong la lap.
     let mo=B.map(h=>h.slice()), bcs=[];
     for(const m of (p.bien_chinh||[])){
-      bcs.push(ghiNuoc(m, mo));
+      const q=mo[m[0]][m[1]], do_=q===q.toUpperCase();
+      bcs.push(`<span class="${do_?'n-do':'n-den'}">${ghiNuoc(m, mo)}</span>`);
       mo[m[2]][m[3]]=mo[m[0]][m[1]]; mo[m[0]][m[1]]='.';
     }
     const bc=bcs.join(' <span class="mt">→</span> ');
@@ -820,6 +836,15 @@ fetch('/api/dia-chi',{method:'POST',body:'{}',
     if(d.lan) document.getElementById('chiaSe').textContent=T.chia_se+': '+d.lan;
   }).catch(()=>{});
 
+function datNen(m){
+  document.documentElement.setAttribute('data-nen', m);
+  document.getElementById('nutNen').textContent = m==='sang' ? '☀️' : '🌙';
+  localStorage.setItem('nen', m);
+}
+const doiNen=()=>datNen(
+  document.documentElement.getAttribute('data-nen')==='sang' ? 'toi' : 'sang');
+
+datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
 veBan();
 vanMoi();
