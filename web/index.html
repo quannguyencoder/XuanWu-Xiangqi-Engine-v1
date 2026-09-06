@@ -163,7 +163,7 @@
 
     <div class="the">
       <h2><span id="tNuocTot">Nước tốt nhất cho</span> <b id="benTot">Đỏ</b></h2>
-      <div class="nuoc-to" id="nuocTot">—</div>
+      <div class="nuoc-to" id="nuocTot">…</div>
       <div class="pv" id="pv"></div>
       <div style="margin-top:8px;font-size:12.5px;color:var(--mo)">
         <span id="tVuaDi">Nước vừa đi</span> <b id="vuaDiTxt">—</b>
@@ -577,15 +577,17 @@ function hienPhanTich(p){
 const goi=async(d,b)=>(await fetch(d,{method:'POST',
   headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})})).json();
 
-async function phanTich(){
+async function phanTich(muc){
   const p=++phien;
+  // Tu dong chay sau moi nuoc thi dung muc NHANH, de khong bat nguoi choi doi
+  // 10 giay chi de xem goi y. Bam nut Goi y moi dung muc da chon.
   const d=await goi('/api/phan-tich',{ma_van:van,
-    muc_do:document.getElementById('mucDo').value});
+    muc_do: muc || 'de'});
   if(p!==phien) return;
   if(d.diem!==undefined){ thanh(d.diem); diemTruoc=d.diem; }
   hienPhanTich(d);
 }
-const neuTuChoi=()=>{ if(tuChoi()&&van) phanTich(); };
+const neuTuChoi=()=>{ if(van) phanTich(); };
 function doiCheDo(){ goiY=null; veMuiTen(); neuTuChoi(); }
 
 async function vanMoi(){
@@ -602,7 +604,7 @@ async function vanMoi(){
   document.getElementById('pv').innerHTML='';
   cham={trang:null,den:null}; veCham();
   capNhat(d); veDs(); amThanh('batdau');
-  if(tuChoi()) phanTich();
+  phanTich();
 }
 
 async function di(mv){
@@ -639,7 +641,7 @@ async function di(mv){
     document.getElementById('vuaDiTxt').textContent=kyHieu(d.nuoc_may);
   }
   diemTruoc=d.diem; capNhat(d); veDs();
-  if(tuChoi()&&d.trang_thai==='dang_choi') phanTich();
+  if(d.trang_thai==='dang_choi') phanTich();
 }
 
 // Chi VE MUI TEN goi y, khong tu di - nguoi choi tu quyet dinh co theo hay khong
@@ -668,7 +670,7 @@ async function lui(){
   document.getElementById('vuaDiTxt').textContent=kyHieu(vuaDi);
   cham={trang:null,den:null}; veCham();
   capNhat(d); veDs();
-  if(tuChoi()) phanTich();
+  phanTich();
 }
 
 async function napFen(){
@@ -679,7 +681,7 @@ async function napFen(){
   van=d.ma_van; chon=null; goiY=null; lichSu=[]; vuaDi=null; phien++;
   document.getElementById('ds').innerHTML='';
   capNhat(d);
-  if(tuChoi()) phanTich();
+  phanTich();
 }
 
 function veBiAn(){
