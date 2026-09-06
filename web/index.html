@@ -644,6 +644,12 @@ function hienPhanTich(p){
     document.getElementById('benTot').textContent=
       p.ben_di==='trang'?T.do_:T.den_;
     document.getElementById('nuocTot').textContent=ghiNuoc(p.nuoc_tot, B);
+    // Che do tu choi hai nguoi: phan tich chay tu dong sau moi nuoc, va neu
+    // nguoi choi da bat mui ten (nut Mui ten) thi ve LUON, khong can bam nut
+    // Goi y rieng. Che do choi voi may thi KHONG tu ve - mui ten hien lien
+    // tuc se lo dap an truoc khi nguoi choi kip nghi, chi ve khi chu dong bam
+    // nut Goi y.
+    if(tuChoi()){ goiY=p.nuoc_tot; veMuiTen(); }
     // Bien chinh: moi nuoc doi tren ban co da di cac nuoc truoc do, nen phai
     // mo phong tung buoc thi ky hieu moi dung.
     // To mau theo ben di. Can vi hai ben danh so cot NGUOC NHAU nen Ma Do va
