@@ -152,6 +152,13 @@ class May(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a):
         pass                                  # khong in log moi yeu cau
 
+    def end_headers(self):
+        # Bao trinh duyet DUNG luu dem. Khong co dong nay thi doi tep am thanh
+        # hay sua giao dien xong van thay ban cu, vi trinh duyet dung ban da luu
+        # theo ten tep.
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        super().end_headers()
+
     def _tra(self, data, ma=200):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(ma)

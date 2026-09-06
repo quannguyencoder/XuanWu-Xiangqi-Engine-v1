@@ -96,6 +96,26 @@
   .fen{font-family:ui-monospace,Menlo,monospace;font-size:11px;width:100%}
   .chia{color:var(--mo);font-size:11.5px;margin-top:9px;
         font-family:ui-monospace,Menlo,monospace}
+
+  /* Phan luat choi o duoi, trai het be ngang trang */
+  .luat{max-width:1500px;margin:0 auto;padding:0 18px 40px}
+  .luat h2{font-size:12px;margin:22px 0 12px}
+  .bang-quan{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+             gap:10px}
+  .dong-quan{display:flex;gap:13px;align-items:flex-start;background:var(--the);
+             border:1px solid var(--vien);border-radius:9px;padding:12px 14px}
+  .bieu{width:44px;height:44px;flex-shrink:0;border-radius:50%;display:flex;
+        align-items:center;justify-content:center;font-size:23px;font-weight:700;
+        background:radial-gradient(circle at 34% 30%,#fdf7ea,#e4d0a9 72%)}
+  .bieu.d{color:var(--do);border:2.5px solid var(--do)}
+  .bieu.n{color:var(--den);border:2.5px solid var(--den)}
+  .mo-ta b{display:block;margin-bottom:2px;font-size:14px}
+  .mo-ta span{color:var(--mo);font-size:13px;line-height:1.55}
+  .ds-luat{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+           gap:9px}
+  .y{background:var(--the);border:1px solid var(--vien);border-radius:9px;
+     padding:11px 14px;font-size:13.5px;color:var(--mo);line-height:1.6}
+  .y b{color:#ffb4a8}
 </style>
 </head>
 <body>
@@ -180,6 +200,13 @@
   </div>
 </div>
 
+<div class="luat">
+  <h2 id="tCachDi">Cách đi quân</h2>
+  <div class="bang-quan" id="bangQuan"></div>
+  <h2 id="tLuatDacBiet">Luật đặc biệt</h2>
+  <div class="ds-luat" id="dsLuat"></div>
+</div>
+
 <script src="lang.js"></script>
 <script>
 const O=72, LE=44;   // o to hon + le rong cho so toa do
@@ -242,19 +269,23 @@ function ghiNuoc(mv, banTruoc){
 }
 
 // --- Am thanh: tep da cat khoang lang, phat NGAY khi quan bat dau truot ---
-const TEP={}; const AM={di:.75,an:.95,chieu:.6,het:.5,win:.6,thua:.6,hoa:.6,batdau:.5};
+const TEP={}; const AM={di:.75,an:.95,het:.5,win:.6,thua:.6,hoa:.6,batdau:.5};
 // Am thanh da chon va cat san tu tep goc nguoi dung cung cap.
 // Ghi thang vao day thay vi de trong localStorage, de moi may va moi dia chi
 // deu nghe giong nhau, va ai tai du an ve cung co san.
-const MAC_DINH={di:'sound-move.wav',   an:'sound-capture.wav',
-                chieu:'sound-check.wav', batdau:'sound-start.wav',
-                win:'sound-win.wav',   thua:'sound-lose.wav',
-                hoa:'sound-start.wav', het:'sound-win.wav'};
+// Them ?v= de trinh duyet TAI LAI khi tep doi. Khong co no thi trinh duyet
+// dung ban da luu dem theo TEN TEP, va noi dung moi khong bao gio den duoc -
+// dung loi da gap: doi tep am thanh roi ma van nghe tieng cu.
+const V = '3';
+const MAC_DINH={di:'sound-move.wav',     an:'sound-capture.wav',
+                batdau:'sound-start.wav', win:'sound-win.wav',
+                thua:'sound-lose.wav',   hoa:'sound-start.wav',
+                het:'sound-win.wav'};
 // Xoa lua chon cu neu con: no tro toi cac tep am1..am10 da bi xoa sau khi
 // gan co dinh, va se lam mat het am thanh.
 localStorage.removeItem('am_gan');
 for(const [k,f] of Object.entries(MAC_DINH)){
-  const a=new Audio(f); a.preload='auto'; a.load(); TEP[k]=a;
+  const a=new Audio(f+'?v='+V); a.preload='auto'; a.load(); TEP[k]=a;
 }
 function amThanh(k){ try{ const a=TEP[k].cloneNode(); a.volume=AM[k]??.7;
   a.play().catch(()=>{}); }catch(e){} }
@@ -285,7 +316,24 @@ function datNN(m){
   document.getElementById('mucDo').title = T.giai_thich_muc;
   dat('benCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]]);
   localStorage.setItem('nn',m);
+  veLuat();
   if(banCo) veLai();
+}
+
+function veLuat(){
+  const thu = ['K','A','E','H','R','C','P'];
+  document.getElementById('tCachDi').textContent = T.cach_di;
+  document.getElementById('tLuatDacBiet').textContent = T.luat_dac_biet;
+  document.getElementById('bangQuan').innerHTML = thu.map(k=>`
+    <div class="dong-quan">
+      <div class="bieu d">${TEN[k][1]}</div>
+      <div class="bieu n">${TEN[k][0]}</div>
+      <div class="mo-ta"><b>${TEN_QUAN_DO[nn][k]} / ${TEN_QUAN[nn][k]}</b>
+        <span>${T['q_'+k]}</span></div>
+    </div>`).join('');
+  document.getElementById('dsLuat').innerHTML =
+    ['l1','l2','l3','l4','l5'].map((k,i)=>
+      `<div class="y"><b>${i+1}.</b> ${T[k]}</div>`).join('');
 }
 
 function veBan(){
@@ -450,8 +498,9 @@ function capNhat(d){
     t.innerHTML = tuChoi()
       ? `${T.luot_cua} <b>${d.ben_di==='trang'?'Đỏ':'Đen'}</b>`
       : (d.ben_di===minh?T.den_luot:T.may_nghi);
-    if(d.bi_chieu){ t.innerHTML+=` — <b style="color:#e74c3c">${T.bi_chieu}</b>`;
-                    amThanh('chieu'); }
+    // Khong co am rieng cho chieu tuong: no xay ra lien tuc trong van, va
+    // thanh trang thai da bao bang chu do roi.
+    if(d.bi_chieu) t.innerHTML+=` — <b style="color:#e74c3c">${T.bi_chieu}</b>`;
   }
   veLai();
 }
