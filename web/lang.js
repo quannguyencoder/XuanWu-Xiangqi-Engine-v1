@@ -55,6 +55,7 @@ const NGON_NGU = {
     chia_se:'Máy khác vào bằng', luot_cua:'Đến lượt',
     tong_ket:'Tổng kết ván', ho_nang_nhat:'Nước hớ nặng nhất',
     khong_ho:'không có nước hớ nào', so_nuoc_ngan:'nước',
+    huy:'Huỷ', bat_dau:'Bắt đầu',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -110,6 +111,7 @@ const NGON_NGU = {
     chia_se:'Other devices', luot_cua:'Turn',
     tong_ket:'Game review', ho_nang_nhat:'Biggest blunder',
     khong_ho:'no blunders', so_nuoc_ngan:'move',
+    huy:'Cancel', bat_dau:'Start',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -165,5 +167,6 @@ const NGON_NGU = {
     chia_se:'其他设备', luot_cua:'轮到',
     tong_ket:'对局复盘', ho_nang_nhat:'最大失误',
     khong_ho:'没有明显失误', so_nuoc_ngan:'着',
+    huy:'取消', bat_dau:'开始',
   },
 };

@@ -122,6 +122,14 @@
   button.chinh:hover{background:#d0432f}
   .hang{display:flex;gap:7px;margin-bottom:8px}
   .hang>*{flex:1;min-width:0}
+  .lop-modal{position:fixed;inset:0;background:#000a;z-index:20;
+             display:none;align-items:center;justify-content:center;padding:16px}
+  .hop-modal{background:var(--the);border:1px solid var(--vien);border-radius:10px;
+             padding:18px;width:100%;max-width:340px}
+  .hop-modal h2{margin:0 0 14px;font-size:16px}
+  .hop-modal label{display:block;font-size:12.5px;color:var(--mo);margin:0 0 4px}
+  .hop-modal .hang{margin-bottom:12px}
+  .hop-modal .nut-hang{margin-bottom:0}
   .ds{font-size:13px;max-height:150px;overflow-y:auto;
       font-variant-numeric:tabular-nums;line-height:1.85}
   .ds div{display:flex;gap:10px}
@@ -223,11 +231,11 @@
         <select id="mucDo" onchange="neuTuChoi()"></select>
       </div>
       <div class="hang">
-        <select id="benCam" onchange="vanMoi()"></select>
+        <select id="benCam" onchange="moVanMoi()"></select>
       </div>
       <div class="hang">
         <button onclick="lui()" id="bLui">↰ Lùi</button>
-        <button class="chinh" onclick="vanMoi()" id="bMoi">Ván mới</button>
+        <button class="chinh" onclick="moVanMoi()" id="bMoi">Ván mới</button>
         <button onclick="xoayBan()" id="bXoay">⇅ Xoay</button>
       </div>
       <div class="hang">
@@ -264,6 +272,32 @@
 
   <h2 id="tLuatDacBiet">Luật đặc biệt</h2>
   <div class="ds-luat" id="dsLuat"></div>
+</div>
+
+<div class="lop-modal" id="lopVanMoi">
+  <div class="hop-modal">
+    <h2 id="tHopVanMoi">Ván mới</h2>
+    <div class="hang">
+      <div>
+        <label id="nhCheDo">Máy</label>
+        <select id="hCheDo"></select>
+      </div>
+      <div>
+        <label id="nhMucDo">Mức độ</label>
+        <select id="hMucDo"></select>
+      </div>
+    </div>
+    <div class="hang" id="hangHBenCam">
+      <div>
+        <label id="nhBenCam">Bạn cầm</label>
+        <select id="hBenCam"></select>
+      </div>
+    </div>
+    <div class="hang nut-hang">
+      <button onclick="dongVanMoi()" id="hHuy">Huỷ</button>
+      <button class="chinh" onclick="xacNhanVanMoi()" id="hBatDau">Bắt đầu</button>
+    </div>
+  </div>
 </div>
 
 <script src="lang.js"></script>
@@ -382,13 +416,28 @@ function datNN(m){
   document.getElementById('bFen').textContent=T.nap_fen;
   document.getElementById('bMuiTen').textContent=
     '↗ '+T.mui_ten+': '+(choMuiTen?T.bat:T.tat);
-  const dat=(id,ds)=>{const e=document.getElementById(id), g=e.value;
+  // mac (gia tri mac dinh): truoc day khi o chon con TRONG (lan dau vao trang),
+  // trinh duyet tu chon option DAU TIEN trong danh sach ma khong bao gio bao
+  // - "mucDo" dang co "de" (0,5 giay) dung dau nen may luon nghi RAT NHANH
+  // ma khong ai chu y chinh. Nay luon dat mac dinh RO RANG ("vua") thay vi
+  // pho mac cho thu tu lien tinh co trong HTML.
+  const dat=(id,ds,mac)=>{const e=document.getElementById(id), g=e.value;
     e.innerHTML=ds.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
-    if(g) e.value=g;};
-  dat('cheDo',[['may',T.choi_may],['tu',T.tu_choi]]);
-  dat('mucDo',[['de',T.de],['vua',T.vua],['kho',T.kho]]);
+    e.value = g || mac || ds[0][0];};
+  dat('cheDo',[['may',T.choi_may],['tu',T.tu_choi]],'may');
+  dat('mucDo',[['de',T.de],['vua',T.vua],['kho',T.kho]],'vua');
   document.getElementById('mucDo').title = T.giai_thich_muc;
-  dat('benCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]]);
+  dat('benCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]],'trang');
+  dat('hCheDo',[['may',T.choi_may],['tu',T.tu_choi]],'may');
+  dat('hMucDo',[['de',T.de],['vua',T.vua],['kho',T.kho]],'vua');
+  dat('hBenCam',[['trang',T.ben_cam+': '+T.do],['den',T.ben_cam+': '+T.den]],'trang');
+  document.getElementById('tHopVanMoi').textContent=T.van_moi;
+  document.getElementById('nhCheDo').textContent=T.may;
+  document.getElementById('nhMucDo').textContent=T.muc_do;
+  document.getElementById('hMucDo').title = T.giai_thich_muc;
+  document.getElementById('nhBenCam').textContent=T.ben_cam;
+  document.getElementById('hHuy').textContent=T.huy;
+  document.getElementById('hBatDau').textContent=T.bat_dau;
   localStorage.setItem('nn',m);
   veLuat(); veCham(); veDs(); veBiAn();
   // Ve lai o phan tich bang ngon ngu moi. Khong co dong nay thi noi dung cu
@@ -917,6 +966,36 @@ async function khoiPhucHoacMoi(){
     vanMoi();
   }
 }
+
+// --- Hop thoai "Van moi": bat nguoi choi XAC NHAN che do/trinh do/ben cam --
+// truoc khi thuc su bat dau, thay vi vao thang bang gia tri dang co san trong
+// mấy o chon nho o thanh ben (de bi bo qua). Day cung la noi DUY NHAT set
+// trinh do, nen khong con chuyen chon nham "De" (0,5 giay) ma khong biet.
+function moVanMoi(){
+  document.getElementById('hCheDo').value=document.getElementById('cheDo').value;
+  document.getElementById('hMucDo').value=document.getElementById('mucDo').value;
+  document.getElementById('hBenCam').value=document.getElementById('benCam').value;
+  document.getElementById('hangHBenCam').style.display=
+    document.getElementById('hCheDo').value==='tu' ? 'none' : 'flex';
+  document.getElementById('lopVanMoi').style.display='flex';
+}
+function dongVanMoi(){
+  document.getElementById('lopVanMoi').style.display='none';
+}
+function xacNhanVanMoi(){
+  document.getElementById('cheDo').value=document.getElementById('hCheDo').value;
+  document.getElementById('mucDo').value=document.getElementById('hMucDo').value;
+  document.getElementById('benCam').value=document.getElementById('hBenCam').value;
+  dongVanMoi();
+  vanMoi();
+}
+document.getElementById('hCheDo').addEventListener('change',()=>{
+  document.getElementById('hangHBenCam').style.display=
+    document.getElementById('hCheDo').value==='tu' ? 'none' : 'flex';
+});
+document.getElementById('lopVanMoi').addEventListener('click',e=>{
+  if(e.target.id==='lopVanMoi') dongVanMoi();   // bam ra ngoai hop thi dong
+});
 
 async function vanMoi(){
   const ben=document.getElementById('benCam').value;
