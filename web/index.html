@@ -879,10 +879,13 @@ async function phanTich(muc){
   if(dangPhanTich) return;
   dangPhanTich=true;
   const p=++phien;
-  // Tu dong chay sau moi nuoc thi dung muc NHANH, de khong bat nguoi choi doi
-  // 10 giay chi de xem goi y. Bam nut Goi y moi dung muc da chon.
+  // Truoc day tu dong chay sau moi nuoc LUON dung muc NHANH (0,5s) bat ke
+  // trinh do da chon la gi - nguoi choi chon "Kho" ma mui ten van tra loi
+  // duoi 1 giay, tuong lam nham la trinh do khong co tac dung. Nay mac dinh
+  // doc dung o chon Trinh do, dong nghia moi nuoc se doi lau hon o muc Kho -
+  // doi lai de doi.
   const d=await goi('/api/phan-tich',{ma_van:van,
-    muc_do: muc || 'de'});
+    muc_do: muc || document.getElementById('mucDo').value || 'de'});
   dangPhanTich=false;
   if(p!==phien||!d||d.loi) return;
   if(d.diem!==undefined){ thanh(d.diem); diemTruoc=d.diem; }
