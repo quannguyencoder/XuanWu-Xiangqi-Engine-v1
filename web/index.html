@@ -45,10 +45,13 @@
 
   /* Mau ban co: TRUC GIAO voi sang/toi (--nen/--the/... o tren), chi doi
      --go/--luoi. Chu y dung mau qua nhat cho --go, vi quan co dung nen do
-     tuong phan (radial-gradient trang nhat) can go sam de doc chu duoc. */
-  html[data-ban="do"]{--go:#c96b53;--luoi:#7a3524}
-  html[data-ban="da"]{--go:#8a9199;--luoi:#4d5459}
-  html[data-ban="xanh"]{--go:#7fa88f;--luoi:#3f5f4d}
+     tuong phan (radial-gradient trang nhat) can go sam de doc chu duoc.
+     "do" (do-tuong-phan-thap voi quan do, da doi thanh xanh lam) doi ten
+     thanh "lam" cho dung mau - giu mau nau-do cu se lan vao vien/chu quan
+     Do (var(--do):#c0392b), kho phan biet quan Do voi ban co luc choi. */
+  html[data-ban="lam"]{--go:#7c9cc4;--luoi:#3c5878}
+  html[data-ban="da"]{--go:#9198a0;--luoi:#4d545c}
+  html[data-ban="xanh"]{--go:#80ae87;--luoi:#3a5c41}
   /* Thanh danh gia GIU NGUYEN mau dam/sang o ca hai giao dien - no la thang
      diem rieng (nhu chess.com), khong phai noi dung trang nen khong doi theo
      sang/toi. Chi them vien de tach voi nen trang sang. */
@@ -275,6 +278,7 @@
     <div class="the" id="theXemLai" style="display:none">
       <h2 id="tXemLai">Đang xem lại ván</h2>
       <div id="doThiXemLai" style="margin:4px 0 10px"></div>
+      <div id="xlChatLuong" style="margin:-2px 0 8px;font-size:13px;min-height:18px"></div>
       <div class="hang">
         <button onclick="nhayXemLai(0)" id="bXlDau" style="flex:0 0 44px">⏮</button>
         <button onclick="xemLaiLui()" id="bXlTruoc">◀ Trước</button>
@@ -897,6 +901,7 @@ function bam(r,c){
   if(!van && cheDoTrang!=='giai_the') return;
   if(dangCho&&!tuChoi()) return;
   if(chon){
+    if(chon[0]===r&&chon[1]===c){ chon=null; ve(); return; }  // bam lai chinh quan dang chon -> bo chon, nhu co vua
     const mv=hopLe.find(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c);
     if(mv){ chon=null; thucHienNuoc(mv); return; }
   }
@@ -963,8 +968,13 @@ function batDauKeo(e,r,c){
     const mr=Math.round((y-LE)/O), mc=Math.round((x-LE)/O);
     const [br,bc]=tuMH(mr,mc);
     const mv=hopLe.find(m=>m[0]===r&&m[1]===c&&m[2]===br&&m[3]===bc);
+    // LUON ve() truoc: keo-tha da doi style.left/top cua quan sang vi tri tha,
+    // trong khi bay() tim quan bang toa do O CHO CU de choi hoat hinh + phat
+    // am thanh. Khong ve() lai truoc thi bay() khong tim thay quan -> cham lang
+    // le, khong tieng, khong hoat hinh (loi da gap khi keo-tha, khong xay ra
+    // voi bam-chon vi luc do quan chua bao gio bi doi style.left/top).
+    ve();
     if(mv){ chon=null; thucHienNuoc(mv); }
-    else ve();                  // tha khong dung o hop le -> quan tu bay ve cho cu
   };
   el.addEventListener('pointermove',diChuyen);
   el.addEventListener('pointerup',ketThuc);
@@ -1036,6 +1046,20 @@ function chamNuoc(truoc,sau,ben){
   return{t:T.sai_nghiem,m:'#e74c3c',l};
 }
 
+// "Do chinh xac" kieu chess.com: trung binh cong moi nuoc quy ve thang 0-100,
+// mat 1 diem cho moi 1 diem thang 0-1000 bi mat so voi nuoc tot nhat, cham 0
+// khi mat tu 100 diem tro len. Don gian, doc duoc ngay tu chamNuoc() da co
+// san - khong bia them mot mo hinh danh gia rieng.
+function tinhChinhXac(diemArr){
+  const tong={trang:{n:0,s:0}, den:{n:0,s:0}};
+  for(const {ben,truoc,sau} of diemArr||[]){
+    const l = ben==='trang' ? sau-truoc : truoc-sau;
+    tong[ben].n++; tong[ben].s+=Math.max(0,Math.min(100,100+l));
+  }
+  const pct=b=>tong[b].n ? Math.round(tong[b].s/tong[b].n) : null;
+  return {trang:pct('trang'), den:pct('den')};
+}
+
 // Tong ket ca van: dem so nuoc moi loai (Tot/Khong chuan/Sai lam/Sai nghiem
 // trong) va tim nuoc ho NANG NHAT cho tung ben, dua tren diem da tinh san cho
 // moi nuoc trong lichSuDiem - khong tinh lai gi ca, chi doc lai va phan loai
@@ -1049,10 +1073,14 @@ function veTongKet(){
     dem[ben][k.t]=(dem[ben][k.t]||0)+1;
     if(!toi[ben] || k.l<toi[ben].l) toi[ben]={...k, idx};
   }
+  const cx=tinhChinhXac(lichSuDiem);
   const dong=(ben,ten)=>{
     const d=dem[ben];
     const tk=[T.tot,T.khong_chuan,T.sai_lam,T.sai_nghiem]
       .map(nh=>`${nh} ${d[nh]||0}`).join(' · ');
+    const cxb=cx[ben];
+    const nhanCx=cxb!==null
+      ?` — <b>${T.do_chinh_xac} ${cxb}%</b>`:'';
     const x=toi[ben];
     let hop;
     if(!x || x.l>=-12){
@@ -1063,7 +1091,7 @@ function veTongKet(){
       hop=`<div style="margin-top:2px">${T.ho_nang_nhat}: <b style="color:${x.m}">${ky}</b>`
          +` <span style="color:var(--mo)">${x.l}</span></div>`;
     }
-    return `<div><b>${ten}</b> — <span style="color:var(--mo)">${tk}</span>${hop}</div>`;
+    return `<div><b>${ten}</b>${nhanCx} — <span style="color:var(--mo)">${tk}</span>${hop}</div>`;
   };
   e.innerHTML = `<div style="font-weight:700;margin-bottom:6px">${T.tong_ket}</div>`
     + dong('trang','● '+T.do_) + dong('den','● '+T.den_);
@@ -1189,6 +1217,17 @@ async function veXemLai(){
   if(d.diem!==undefined) thanh(d.diem);
   document.getElementById('xlChiSo').textContent=`${xemLaiChiSo}/${tong}`;
   document.getElementById('vuaDiTxt').textContent = vuaDi?kyHieu(vuaDi):'—';
+  // Nhan chat luong nuoc VUA XEM, kieu chess.com danh gia tung nuoc khi duyet
+  // lai ván - tim lai trong lich_su_diem da tinh san, khong tinh gi them.
+  const dEntry=(xemLaiBanGhi.lich_su_diem||[]).find(p=>p.idx===xemLaiChiSo-1);
+  const badge=document.getElementById('xlChatLuong');
+  if(dEntry){
+    const k=chamNuoc(dEntry.truoc,dEntry.sau,dEntry.ben);
+    badge.innerHTML=`${T.chat_luong}: <b style="color:${k.m}">${k.t}</b> `
+      +`<span style="color:var(--mo)">${k.l>=0?'+':''}${k.l}</span>`;
+  }else{
+    badge.innerHTML='';
+  }
   veDoThiXemLai();
 }
 function nhayXemLai(i){
@@ -1215,11 +1254,22 @@ function veDoThiXemLai(){
   const duong=diem.map((p,i)=>`${i===0?'M':'L'}${xCua(i).toFixed(1)},${yCua(p.sau).toFixed(1)}`).join(' ');
   let iHienTai=-1;
   for(let i=0;i<diem.length;i++) if(diem[i].idx+1<=xemLaiChiSo) iHienTai=i;
-  const cham=iHienTai>=0
-    ?`<circle cx="${xCua(iHienTai)}" cy="${yCua(diem[iHienTai].sau)}" r="3" fill="#e74c3c"/>`:'';
+  // Cham mau theo chat luong tung nuoc (chamNuoc) - danh dau nuoc hop, sai lam,
+  // sai nghiem trong ngay tren do thi, giong dau hieu blunder cua chess.com,
+  // thay vi mot duong xanh tron khong noi len duoc gi. Chi cham nhung nuoc
+  // dang chu y (tu "khong chuan" tro len) de khoi roi mat, nuoc hien tai luon
+  // hien du tot hay xau de biet dang xem den dau.
+  const nhomCham=diem.map((p,i)=>{
+    const k=chamNuoc(p.truoc,p.sau,p.ben);
+    const noiBat=i===iHienTai;
+    const r=noiBat?3.4:(k.l<-40?2.2:0);
+    if(!r) return '';
+    return `<circle cx="${xCua(i)}" cy="${yCua(p.sau)}" r="${r}" fill="${k.m}"`
+      +(noiBat?' stroke="#fff" stroke-width="1"':'')+'/>';
+  }).join('');
   cont.innerHTML=`<svg width="${W}" height="${H}" style="display:block">
     <line x1="${P}" y1="${yCua(500)}" x2="${W-P}" y2="${yCua(500)}" stroke="var(--vien)" stroke-width="1"/>
-    <path d="${duong}" fill="none" stroke="#4a9eff" stroke-width="1.6"/>${cham}</svg>`;
+    <path d="${duong}" fill="none" stroke="#4a9eff" stroke-width="1.6"/>${nhomCham}</svg>`;
 }
 
 // --- Che do "Giai the": tan dung 16 trieu the co da co san lam bai tap -----
@@ -1952,7 +2002,7 @@ const doiNen=()=>datNen(
   document.documentElement.getAttribute('data-nen')==='sang' ? 'toi' : 'sang');
 
 // Mau ban co: xoay vong qua 4 lua chon moi lan bam, luu rieng khoi sang/toi.
-const CAC_MAU_BAN=['go','do','da','xanh'];
+const CAC_MAU_BAN=['go','lam','da','xanh'];
 function datMauBan(m){
   if(m==='go') document.documentElement.removeAttribute('data-ban');
   else document.documentElement.setAttribute('data-ban', m);
