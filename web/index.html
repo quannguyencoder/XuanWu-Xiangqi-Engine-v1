@@ -309,10 +309,15 @@
     </div>
 
     <div class="the">
-      <div class="ky" id="bangKy"></div>
+      <h2 id="tChiTietKyThuat" onclick="bapChiTietKyThuat()"
+          style="cursor:pointer;display:flex;align-items:center;gap:5px">
+        <span id="muiChiTietKyThuat">▸</span> <span id="nhanChiTietKyThuat">Chi tiết kỹ thuật</span>
+      </h2>
+      <div class="ky" id="bangKy" style="display:none"></div>
     </div>
 
     <div class="the">
+      <h2 id="tDieuKhienVan">Điều khiển ván</h2>
       <div class="hang">
         <select id="cheDo" onchange="doiCheDo()"></select>
         <select id="mucDo" onchange="neuTuChoi()"></select>
@@ -325,6 +330,10 @@
         <button class="chinh" onclick="moVanMoi()" id="bMoi">Ván mới</button>
         <button onclick="xoayBan()" id="bXoay">⇅ Xoay</button>
       </div>
+    </div>
+
+    <div class="the">
+      <h2 id="tTroGiup">Trợ giúp</h2>
       <div class="hang">
         <button onclick="xinGoiY()" id="bGoiY">💡 Gợi ý nước đi</button>
         <button onclick="bapMuiTen()" id="bMuiTen" style="flex:0 0 130px">↗ Mũi tên: bật</button>
@@ -332,6 +341,10 @@
       <div class="hang">
         <button onclick="bapCanhBaoHo()" id="bCanhBaoHo">⚠️ Cảnh báo nước hớ: tắt</button>
       </div>
+    </div>
+
+    <div class="the">
+      <h2 id="tVanVaKhaiCuoc">Ván đấu &amp; khai cuộc</h2>
       <div class="hang">
         <button onclick="luuVanRaFile()" id="bLuuFile">💾 Lưu ván đấu</button>
         <button onclick="moTaiVanTuFile()" id="bTaiFile">📂 Tải ván đấu</button>
@@ -367,6 +380,9 @@
 </div>
 
 <div class="luat">
+  <h2 id="tHuongDan">Hướng dẫn sử dụng</h2>
+  <div class="ds-luat" id="dsHuongDan"></div>
+
   <h2 id="tCachDi">Cách đi quân</h2>
   <p style="color:var(--mo);font-size:13px;margin:-4px 0 12px" id="tGhiChu"></p>
   <div class="bang-quan" id="bangQuan"></div>
@@ -602,6 +618,10 @@ function datNN(m){
   document.getElementById('tHopKhaiCuoc').textContent=T.duyet_khai_cuoc;
   document.getElementById('bDongKhaiCuoc').textContent=T.dong;
   document.getElementById('bKhaiCuocMoi').textContent='🔀 '+T.mau_khac;
+  document.getElementById('tDieuKhienVan').textContent=T.dieu_khien_van;
+  document.getElementById('tTroGiup').textContent=T.tro_giup;
+  document.getElementById('tVanVaKhaiCuoc').textContent=T.van_va_khai_cuoc;
+  document.getElementById('nhanChiTietKyThuat').textContent=T.chi_tiet_ky_thuat;
   if(document.getElementById('lopKhaiCuoc').style.display==='flex')
     document.getElementById('khaiCuocGhiChu').textContent=T.khai_cuoc_ghi_chu;
   document.getElementById('bXlTruoc').textContent='◀ '+T.truoc_tu;
@@ -635,6 +655,10 @@ function datNN(m){
 }
 
 function veLuat(){
+  document.getElementById('tHuongDan').textContent = T.huong_dan;
+  document.getElementById('dsHuongDan').innerHTML =
+    ['hd1','hd2','hd3','hd4','hd5','hd6'].map(k=>
+      `<div class="y"><b>${T[k+'_t']}</b><br>${T[k+'_n']}</div>`).join('');
   const thu = ['K','A','E','H','R','C','P'];
   document.getElementById('tCachDi').textContent = T.cach_di;
   document.getElementById('tLuatDacBiet').textContent = T.luat_dac_biet;
@@ -794,6 +818,18 @@ function bapMuiTen(){
   document.getElementById('bMuiTen').textContent =
     '↗ '+T.mui_ten+': '+(choMuiTen?T.bat:T.tat);
   veMuiTen();
+}
+
+// Bang "Chi tiet ky thuat" (luong gia/tinh/sau/so nut) thu gon MAC DINH -
+// day la thong tin cho nguoi muon dao sau, khong can luon dap vao mat nguoi
+// choi thuong. Nho lua chon qua localStorage.
+function datChiTietKyThuat(mo){
+  document.getElementById('bangKy').style.display = mo ? 'grid' : 'none';
+  document.getElementById('muiChiTietKyThuat').textContent = mo ? '▾' : '▸';
+  localStorage.setItem('chi_tiet_ky_thuat', mo ? '1' : '0');
+}
+function bapChiTietKyThuat(){
+  datChiTietKyThuat(document.getElementById('bangKy').style.display==='none');
 }
 function xoayBan(){ xoay=!xoay; veBan(); veLai(); }
 
@@ -1896,6 +1932,7 @@ datMauBan(localStorage.getItem('mau_ban')||'go');
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
 document.getElementById('oTen').value=localStorage.getItem('qisheng_ten')||'';
+datChiTietKyThuat(localStorage.getItem('chi_tiet_ky_thuat')==='1');
 tinhKichThuocBan();
 veBan();
 khoiPhucHoacMoi();

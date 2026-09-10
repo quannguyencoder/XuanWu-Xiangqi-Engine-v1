@@ -81,6 +81,15 @@ const NGON_NGU = {
       +' không có tên gọi hay tỉ lệ thắng - dữ liệu gốc vốn dùng làm điểm'
       +' xuất phát cho engine tự chơi, không phải kho khai cuộc có chú thích.',
     mau_khac:'Mẫu khác',
+    dieu_khien_van:'Điều khiển ván', tro_giup:'Trợ giúp',
+    van_va_khai_cuoc:'Ván đấu & khai cuộc', chi_tiet_ky_thuat:'Chi tiết kỹ thuật',
+    huong_dan:'Hướng dẫn sử dụng',
+    hd1_t:'Hai chế độ', hd1_n:'"🎮 Chơi" để đấu với máy hoặc hai người; "🧩 Giải thế" để luyện tìm nước đúng từ 11.000+ thế cờ thật.',
+    hd2_t:'Di chuyển quân', hd2_n:'Bấm chọn quân rồi bấm ô đích, hoặc kéo-thả trực tiếp. Phím ◀ ▶ để lùi/tiến qua từng nước khi đang xem lại.',
+    hd3_t:'Lưu và mang đi', hd3_n:'"💾 Lưu ván đấu" tải file về máy, "📂 Tải ván đấu" nạp lại trên máy khác. "📜 Lịch sử ván đấu" xem lại các ván đã lưu trên máy này, kèm đồ thị đánh giá.',
+    hd4_t:'Trợ giúp khi chơi', hd4_n:'"💡 Gợi ý" và "↗ Mũi tên" chỉ nước tốt nhất. "⚠️ Cảnh báo nước hớ" hỏi lại trước khi đi nước mất nhiều điểm - mặc định tắt.',
+    hd5_t:'Cài đặt thành ứng dụng', hd5_n:'Chrome/Safari đều có tuỳ chọn "Cài đặt" hoặc "Thêm vào Màn hình chính" - mở ra là vào thẳng bàn cờ, không cần trình duyệt.',
+    hd6_t:'Chia sẻ trong mạng nhà', hd6_n:'Dòng địa chỉ ở cuối trang cho máy khác cùng WiFi vào được - không cần Internet, không cần tài khoản.',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -162,6 +171,15 @@ const NGON_NGU = {
       +' no names or win rates. This data was originally collected as starting'
       +' points for engine self-play, not an annotated opening database.',
     mau_khac:'Different sample',
+    dieu_khien_van:'Game controls', tro_giup:'Assistance',
+    van_va_khai_cuoc:'Games & openings', chi_tiet_ky_thuat:'Technical details',
+    huong_dan:'How to use',
+    hd1_t:'Two modes', hd1_n:'"🎮 Play" for a game vs the engine or two players; "🧩 Puzzles" to practice finding the best move from 11,000+ real positions.',
+    hd2_t:'Moving pieces', hd2_n:'Click a piece then the target square, or drag and drop. Use ◀ ▶ to step through moves while reviewing.',
+    hd3_t:'Save & carry with you', hd3_n:'"💾 Save game" downloads a file, "📂 Load game" loads it on another device. "📜 Game history" reviews games saved on this machine, with an eval graph.',
+    hd4_t:'In-game help', hd4_n:'"💡 Hint" and "↗ Arrow" show the best move. "⚠️ Blunder warning" asks for confirmation before a costly move - off by default.',
+    hd5_t:'Install as an app', hd5_n:'Chrome and Safari both offer "Install" or "Add to Home Screen" - opens straight to the board, no browser chrome.',
+    hd6_t:'Share on your home network', hd6_n:'The address shown at the bottom of the page lets other devices on the same WiFi connect - no Internet, no account needed.',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -242,5 +260,14 @@ const NGON_NGU = {
     khai_cuoc_ghi_chu:'来自 chessdb.cn 的 371,855 个真实残局。只有局面，没有名称或胜率 -'
       +'原始数据本是用作引擎自对弈的起始点，并非带注释的开局库。',
     mau_khac:'换一批',
+    dieu_khien_van:'对局控制', tro_giup:'辅助',
+    van_va_khai_cuoc:'对局与开局', chi_tiet_ky_thuat:'技术细节',
+    huong_dan:'使用说明',
+    hd1_t:'两种模式', hd1_n:'"🎮 对弈" 用于人机或双人对战；"🧩 棋题" 用于从一万一千多个真实局面中练习找出最佳着法。',
+    hd2_t:'移动棋子', hd2_n:'点击棋子再点击目标格，或直接拖放。复盘时用 ◀ ▶ 逐步查看每一着。',
+    hd3_t:'保存并带走', hd3_n:'"💾 保存对局" 下载文件，"📂 载入对局" 在其他设备上载入。"📜 对局历史" 查看本机保存的对局，附带评估曲线。',
+    hd4_t:'对弈辅助', hd4_n:'"💡 提示" 和 "↗ 箭头" 显示最佳着法。"⚠️ 漏着警告" 在损失较大的着法前询问确认 - 默认关闭。',
+    hd5_t:'安装为应用', hd5_n:'Chrome 和 Safari 都提供"安装"或"添加到主屏幕" - 打开后直接进入棋盘，没有浏览器界面。',
+    hd6_t:'在家庭网络中分享', hd6_n:'页面底部显示的地址可让同一 WiFi 下的其他设备连接 - 不需要 Internet，不需要账号。',
   },
 };
