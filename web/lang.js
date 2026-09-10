@@ -72,6 +72,8 @@ const NGON_NGU = {
     giai_thich_quyet_dinh:'dẫn tới ưu thế áp đảo, gần như thắng chắc',
     giai_thich_an_quan:'ăn được {quan} của đối phương',
     giai_thich_loi_the:'giành lợi thế rõ rệt',
+    de_tu:'Dễ', vua_tu:'Vừa', kho_tu:'Khó', tien_do:'Tiến độ',
+    da_giai:'Đã giải', ti_le_dung:'Tỉ lệ đúng', dong_ho:'Thời gian',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -144,6 +146,8 @@ const NGON_NGU = {
     giai_thich_quyet_dinh:'leads to an overwhelming, near-decisive advantage',
     giai_thich_an_quan:'wins the opponent\'s {quan}',
     giai_thich_loi_the:'gains a clear advantage',
+    de_tu:'Easy', vua_tu:'Medium', kho_tu:'Hard', tien_do:'Progress',
+    da_giai:'Solved', ti_le_dung:'Accuracy', dong_ho:'Time',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -216,5 +220,7 @@ const NGON_NGU = {
     giai_thich_quyet_dinh:'形成压倒性优势，接近必胜',
     giai_thich_an_quan:'吃掉对方的{quan}',
     giai_thich_loi_the:'取得明显优势',
+    de_tu:'简单', vua_tu:'普通', kho_tu:'困难', tien_do:'进度',
+    da_giai:'已完成', ti_le_dung:'正确率', dong_ho:'时间',
   },
 };

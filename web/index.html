@@ -181,6 +181,25 @@
   .y{background:var(--the);border:1px solid var(--vien);border-radius:9px;
      padding:11px 14px;font-size:13.5px;color:var(--mo);line-height:1.6}
   .y b{color:#ffb4a8}
+
+  /* Man hinh hep (dien thoai): xep ban co len tren, sidebar het chieu rong
+     ben duoi (khung.flex-wrap da tu xep hang, chi can bo be rong co dinh
+     460px cua .ben - tren 375px no se tran man hinh). Kich thuoc BAN CO
+     (O/LE) duoc tinh lai va ve lai bang JS trong tinhKichThuocBan(), khong
+     phai o day, vi no anh huong ca toa do bam/keo tha. */
+  @media (max-width:900px){
+    .khung{padding:10px;gap:12px}
+    .ben{width:100%;max-width:460px}
+    .duoi{grid-template-columns:1fr;padding:0 10px}
+    .luat{padding:0 10px 30px}
+    .thanh{height:var(--cao-thanh,480px)}
+  }
+  @media (max-width:480px){
+    .dau h1{font-size:15px}
+    .dau img{width:36px;height:36px}
+    .the{padding:11px}
+    button,select,input{font-size:13px;padding:7px}
+  }
 </style>
 </head>
 <body>
@@ -222,6 +241,7 @@
         <h2 id="tGiaiThe">Giải thế</h2>
         <div class="hang">
           <select id="locGiaiDoan"></select>
+          <select id="locDoKho"></select>
         </div>
         <div id="theBaoNhieu" style="font-size:12.5px;color:var(--mo);margin-bottom:8px"></div>
         <div id="phanHoiThe" style="min-height:44px;font-size:14px"></div>
@@ -231,6 +251,10 @@
           <button onclick="theXemDapAn()" id="bTheDapAn">👁 Xem đáp án</button>
           <button class="chinh" onclick="theTiepTheo()" id="bTheTiep">⏭ Thế tiếp theo</button>
         </div>
+      </div>
+      <div class="the">
+        <h2 id="tTienDoThe">Tiến độ</h2>
+        <div class="ky" id="theThongKe"></div>
       </div>
     </div>
 
@@ -376,7 +400,23 @@
 
 <script src="lang.js"></script>
 <script>
-const O=72, LE=60;   // le 60 de so cot khong bi quan co (ban kinh 29,5px) che
+// O,LE TRUOC LA HANG SO CO DINH (72,60) - doi thanh bien vi man hinh dien
+// thoai hep hon be rong ban co goc (696px). Moi ham ve (veBan/ve/veMuiTen)
+// deu DOC LAI gia tri nay moi lan goi (khong co gi cache theo gia tri cu), nen
+// chi can doi O/LE roi goi ve lai la an toan - khong phai sua tung noi dung O/LE.
+let O=72, LE=60;   // le 60 de so cot khong bi quan co (ban kinh 29,5px) che
+const O_GOC=72, LE_GOC=60;
+
+// Tinh lai O/LE cho vua chieu rong man hinh, giu dung ti le vuong vuc cua
+// ban co goc. Goi luc tai trang va moi khi doi kich thuoc cua so.
+function tinhKichThuocBan(){
+  const rong_goc=LE_GOC*2+O_GOC*8, cao_goc=LE_GOC*2+O_GOC*9+16;
+  const rong_kha_dung=Math.min(window.innerWidth-24, rong_goc);
+  const tiLe=Math.max(0.46, Math.min(1, rong_kha_dung/rong_goc));
+  O=Math.round(O_GOC*tiLe); LE=Math.round(LE_GOC*tiLe);
+  const thanh=document.querySelector('.thanh');
+  if(thanh) thanh.style.setProperty('--cao-thanh', Math.round(620*tiLe)+'px');
+}
 const TEN={R:['車','俥'],H:['馬','傌'],E:['象','相'],A:['士','仕'],
            K:['將','帥'],C:['砲','炮'],P:['卒','兵']};
 let van=null, banCo=null, chon=null, hopLe=[], vuaDi=null, dangCho=false;
@@ -538,8 +578,11 @@ function datNN(m){
   document.getElementById('tGiaiThe').textContent=T.giai_the;
   dat('locGiaiDoan',[['',T.tat_ca],['khai',T.khai_cuoc],
       ['trung',T.trung_cuoc],['tan',T.tan_cuoc]],'');
+  dat('locDoKho',[['',T.tat_ca],['de',T.de_tu],['vua',T.vua_tu],['kho',T.kho_tu]],'');
   document.getElementById('bTheDapAn').textContent='👁 '+T.xem_dap_an;
   document.getElementById('bTheTiep').textContent='⏭ '+T.the_tiep_theo;
+  document.getElementById('tTienDoThe').textContent=T.tien_do;
+  veTheThongKe();
   localStorage.setItem('nn',m);
   veLuat(); veCham(); veDs(); veBiAn();
   // Ve lai o phan tich bang ngon ngu moi. Khong co dong nay thi noi dung cu
@@ -1059,12 +1102,51 @@ function moTrang(t){
   }
 }
 
+// --- Tien do Giai the: luu LAU DAI qua localStorage, khong mat khi tai lai
+// trang. "Da gap" chi cap so luong gan nhat de khong gui len mot mang vo han
+// (khong sao neu qua N thi bat dau gap lai bai cu - van con hon 11 nghin bai).
+const KHOA_THE_DA_GAP='qisheng_the_da_gap', KHOA_THE_THONG_KE='qisheng_the_thong_ke';
+const GIOI_HAN_DA_GAP=1500;
+
+function theLayDaGap(){
+  try{ return JSON.parse(localStorage.getItem(KHOA_THE_DA_GAP)||'[]'); }catch(e){ return []; }
+}
+function theDanhDauDaGap(id){
+  if(!id) return;
+  const ds=theLayDaGap();
+  if(!ds.includes(id)){
+    ds.push(id);
+    if(ds.length>GIOI_HAN_DA_GAP) ds.splice(0, ds.length-GIOI_HAN_DA_GAP);
+    try{ localStorage.setItem(KHOA_THE_DA_GAP, JSON.stringify(ds)); }catch(e){}
+  }
+}
+function theLayThongKe(){
+  try{ return JSON.parse(localStorage.getItem(KHOA_THE_THONG_KE)||'null')||{tong:0,dung:0}; }
+  catch(e){ return {tong:0,dung:0}; }
+}
+function theCapNhatThongKe(dung){
+  const tk=theLayThongKe();
+  tk.tong++; if(dung) tk.dung++;
+  try{ localStorage.setItem(KHOA_THE_THONG_KE, JSON.stringify(tk)); }catch(e){}
+  veTheThongKe();
+}
+function veTheThongKe(){
+  const e=document.getElementById('theThongKe');
+  if(!e) return;
+  const tk=theLayThongKe();
+  const ti_le = tk.tong ? Math.round(tk.dung/tk.tong*100) : 0;
+  e.innerHTML=`<span>${T.da_giai}</span><span>${tk.tong.toLocaleString()}</span>`
+    +`<span>${T.ti_le_dung}</span><span>${ti_le}% (${tk.dung}/${tk.tong})</span>`
+    +`<span>${T.chuoi_dung}</span><span>${theChuoiDung}</span>`;
+}
+
 async function theTiepTheo(){
   theDaGiai=false; chon=null; goiY=null; hopLe=[];
   document.getElementById('phanHoiThe').innerHTML=
     `<span class="mo2">${T.dang_tai}…</span>`;
   const giai_doan=document.getElementById('locGiaiDoan').value||null;
-  const d=await goi('/api/giai-the-moi',{giai_doan});
+  const do_kho=document.getElementById('locDoKho').value||null;
+  const d=await goi('/api/giai-the-moi',{giai_doan, do_kho, bo_qua:theLayDaGap()});
   if(!d||d.loi){
     document.getElementById('phanHoiThe').innerHTML=
       `<span class="mo2">⚠ ${(d&&d.loi)||T.khong_co_bai_tap}</span>`;
@@ -1080,6 +1162,7 @@ async function theTiepTheo(){
     `${T.nuoc_tot} <b>${d.ben_di==='trang'?T.do_:T.den_}</b>`;
   document.getElementById('theBaoNhieu').textContent =
     ({khai:T.khai_cuoc,trung:T.trung_cuoc,tan:T.tan_cuoc}[d.giai_doan]||'')
+    +' · '+({de:T.de_tu,vua:T.vua_tu,kho:T.kho_tu}[d.do_kho]||'')
     +' · +'+d.xoay_chuyen+' '+T.diem_tu;
 }
 
@@ -1104,6 +1187,7 @@ function xuLyNuocThe(mv){
   if(theDaGiai||!theHienTai) return;
   theDaGiai=true; hopLe=[]; chon=null;
   const dung = JSON.stringify(mv)===JSON.stringify(theHienTai.nuoc_dung);
+  theDanhDauDaGap(theHienTai.id); theCapNhatThongKe(dung);
   const e=document.getElementById('phanHoiThe');
   const giaiThich=`<div style="margin-top:4px;font-size:12.5px;color:var(--mo)">`
     +`${_giaiThichNuoc()}</div>`;
@@ -1118,6 +1202,7 @@ function xuLyNuocThe(mv){
       +`<span style="color:var(--mo)">${T.dap_an}: ${ghiNuoc(theHienTai.nuoc_dung,banCo)}</span>${giaiThich}`;
     amThanh(TEP.thua?'thua':'het');
   }
+  veTheThongKe();
   ve();
   bay(theHienTai.nuoc_dung, ()=>{
     const [r0,c0,r1,c1]=theHienTai.nuoc_dung;
@@ -1618,8 +1703,21 @@ const doiNen=()=>datNen(
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
 document.getElementById('oTen').value=localStorage.getItem('qisheng_ten')||'';
+tinhKichThuocBan();
 veBan();
 khoiPhucHoacMoi();
+
+// Doi kich thuoc cua so (xoay dien thoai, resize) -> tinh lai va ve lai ban
+// co. Debounce 150ms de khong ve lai lien tuc trong luc dang keo canh cua so.
+let _resizeTimer=null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(_resizeTimer);
+  _resizeTimer=setTimeout(()=>{
+    const truoc=O;
+    tinhKichThuocBan();
+    if(O!==truoc){ veBan(); ve(); veMuiTen(); }
+  }, 150);
+});
 
 // Mui ten TRAI/PHAI: dang xem lai thi di chuyen qua tung nuoc; dang choi
 // binh thuong thi TRAI = lui mot nuoc, giong nut "Lui". Bo qua khi dang go

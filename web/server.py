@@ -538,9 +538,24 @@ class May(http.server.SimpleHTTPRequestHandler):
         if not _puzzles:
             return self._tra({"loi": "chua co bai tap nao - chay tools/mine_puzzles.py"}, 404)
         giai_doan = req.get("giai_doan")
-        con_lai = [p for p in _puzzles if not giai_doan or p.get("giai_doan") == giai_doan]
+        do_kho = req.get("do_kho")                     # 'de' | 'vua' | 'kho' | None
+        # Nguong chon tu chinh phan bo xoay_chuyen thuc te cua 11.116 bai
+        # (percentile 33/66) - khong phai so tuy tien.
+        def kho_cua(x):
+            if x < 90: return "de"
+            return "vua" if x < 140 else "kho"
+        # Bo qua cac bai da gap (client tu gui len danh sach FEN da giai) -
+        # chi ap dung neu con du bai sau khi loc, khong thi bo qua rang buoc
+        # nay de khong bao gio "het bai" khi nguoi choi da giai het mot muc.
+        bo_qua = set(req.get("bo_qua") or [])
+        con_lai = [p for p in _puzzles
+                  if (not giai_doan or p.get("giai_doan") == giai_doan)
+                  and (not do_kho or kho_cua(p["xoay_chuyen"]) == do_kho)]
         if not con_lai:
             con_lai = _puzzles
+        chua_gap = [p for p in con_lai if p["fen"] not in bo_qua]
+        if chua_gap:
+            con_lai = chua_gap
         p = random.choice(con_lai)
         # nuoc_dung luu dang ICCS ("a0b0") trong file - doi san sang mang
         # [r0,c0,r1,c1] de client so sanh truc tiep, khong phai tu phan tich.
@@ -549,10 +564,12 @@ class May(http.server.SimpleHTTPRequestHandler):
         except Exception:
             return self._tra({"loi": "bai tap hong"}, 500)
         return self._tra({
-            "fen": p["fen"], "ben_di": "trang" if p["ben_di"] == "w" else "den",
+            "id": p["fen"], "fen": p["fen"],
+            "ben_di": "trang" if p["ben_di"] == "w" else "den",
             "nuoc_dung": nuoc_dung,
             "diem_truoc": p["diem_truoc"], "diem_sau": p["diem_sau"],
             "xoay_chuyen": p["xoay_chuyen"], "giai_doan": p["giai_doan"],
+            "do_kho": kho_cua(p["xoay_chuyen"]),
         })
 
 
