@@ -19,6 +19,7 @@ API duoc thiet ke de mo rong sau nay ma khong phai sua kien truc:
 import http.server
 import json
 import os
+import random
 import re
 import secrets
 import socketserver
@@ -35,10 +36,31 @@ from engine import c_core, book
 from engine.evaluate import evaluate as danh_gia_tinh
 from engine.game_rules import VanCo, DANG_CHOI, TRANG_THANG, DEN_THANG
 from engine import strongest
-from tools.collect_openings import board_to_fen, fen_to_board
+from tools.collect_openings import board_to_fen, fen_to_board, iccs_to_move
 
 CONG = 8000
 MUC_DO = {"de": 0.5, "vua": 3.0, "kho": 10.0}
+
+# Bai tap chien thuat: khai thac tu 16 trieu the co huan luyen da co san,
+# khong ton them chi phi gi - xem tools/mine_puzzles.py de biet cach lam.
+# Nap MOT LAN luc khoi dong, giu trong bo nho (chi ~2MB, khong dang lo).
+_DUONG_PUZZLE = os.path.join(os.path.dirname(THU_MUC), "data", "puzzles.jsonl")
+_puzzles = []
+
+
+def _nap_puzzles():
+    global _puzzles
+    if _puzzles or not os.path.exists(_DUONG_PUZZLE):
+        return
+    with open(_DUONG_PUZZLE, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                _puzzles.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
 
 # Van DA KET THUC duoc luu rieng ra file JSON (khong lien quan gi den _van o
 # duoi - do la ban dang choi DO trong RAM). Moi van la mot file, don gian hon
@@ -226,6 +248,8 @@ class May(http.server.SimpleHTTPRequestHandler):
                 return self._xem_van(req)
             if duong == "/api/xoa-van":
                 return self._xoa_van(req)
+            if duong == "/api/giai-the-moi":
+                return self._giai_the_moi(req)
             return self._tra({"loi": "khong co duong dan nay"}, 404)
         except Exception as e:                # tra loi ro thay vi treo trang
             return self._tra({"loi": f"{type(e).__name__}: {e}"}, 500)
@@ -506,6 +530,29 @@ class May(http.server.SimpleHTTPRequestHandler):
             pass
         return self._tra({"ok": True})
 
+    # -- bai tap chien thuat (xem tools/mine_puzzles.py) ---------------------
+
+    def _giai_the_moi(self, req):
+        if not _puzzles:
+            return self._tra({"loi": "chua co bai tap nao - chay tools/mine_puzzles.py"}, 404)
+        giai_doan = req.get("giai_doan")
+        con_lai = [p for p in _puzzles if not giai_doan or p.get("giai_doan") == giai_doan]
+        if not con_lai:
+            con_lai = _puzzles
+        p = random.choice(con_lai)
+        # nuoc_dung luu dang ICCS ("a0b0") trong file - doi san sang mang
+        # [r0,c0,r1,c1] de client so sanh truc tiep, khong phai tu phan tich.
+        try:
+            nuoc_dung = list(iccs_to_move(p["nuoc_dung"]))
+        except Exception:
+            return self._tra({"loi": "bai tap hong"}, 500)
+        return self._tra({
+            "fen": p["fen"], "ben_di": "trang" if p["ben_di"] == "w" else "den",
+            "nuoc_dung": nuoc_dung,
+            "diem_truoc": p["diem_truoc"], "diem_sau": p["diem_sau"],
+            "xoay_chuyen": p["xoay_chuyen"], "giai_doan": p["giai_doan"],
+        })
+
 
 def main():
     print("XuanWu - dang khoi dong...")
@@ -514,6 +561,9 @@ def main():
     from engine import book
     print(f"  sach khai cuoc: {book.so_muc():,} the co" if book.nap()
           else "  sach khai cuoc: khong co")
+    _nap_puzzles()
+    print(f"  bai tap chien thuat: {len(_puzzles):,} the" if _puzzles
+          else "  bai tap chien thuat: khong co (chay tools/mine_puzzles.py)")
     socketserver.TCPServer.allow_reuse_address = True
     # Lang nghe tren moi dia chi de may khac trong cung mang WiFi vao duoc.
     # Chi trong mang noi bo, khong ra Internet - an toan cho may ca nhan.

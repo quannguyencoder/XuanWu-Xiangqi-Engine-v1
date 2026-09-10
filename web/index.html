@@ -210,6 +210,31 @@
       </div>
     </div>
 
+    <div class="the" style="padding:6px">
+      <div class="hang" style="margin:0">
+        <button onclick="moTrang('choi')" id="bTrangChoi" class="chinh">🎮 Chơi</button>
+        <button onclick="moTrang('giai_the')" id="bTrangGiaiThe">🧩 Giải thế</button>
+      </div>
+    </div>
+
+    <div id="sidebarGiaiThe" style="display:none">
+      <div class="the">
+        <h2 id="tGiaiThe">Giải thế</h2>
+        <div class="hang">
+          <select id="locGiaiDoan"></select>
+        </div>
+        <div id="theBaoNhieu" style="font-size:12.5px;color:var(--mo);margin-bottom:8px"></div>
+        <div id="phanHoiThe" style="min-height:44px;font-size:14px"></div>
+      </div>
+      <div class="the">
+        <div class="hang">
+          <button onclick="theXemDapAn()" id="bTheDapAn">👁 Xem đáp án</button>
+          <button class="chinh" onclick="theTiepTheo()" id="bTheTiep">⏭ Thế tiếp theo</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebarChoi">
     <div class="the" id="theXemLai" style="display:none">
       <h2 id="tXemLai">Đang xem lại ván</h2>
       <div id="doThiXemLai" style="margin:4px 0 10px"></div>
@@ -283,11 +308,12 @@
       </div>
       <div class="chia" id="chiaSe"></div>
     </div>
+    </div>
 
   </div>
 </div>
 
-<div class="duoi">
+<div class="duoi" id="duoiChoi">
   <div class="the">
     <h2 id="tBiAn">Quân bị ăn</h2>
     <div id="biAn" style="min-height:38px">—</div>
@@ -507,6 +533,13 @@ function datNN(m){
   }else{
     document.getElementById('tXemLai').textContent=T.xem_lai_van;
   }
+  document.getElementById('bTrangChoi').textContent='🎮 '+T.trang_choi;
+  document.getElementById('bTrangGiaiThe').textContent='🧩 '+T.giai_the;
+  document.getElementById('tGiaiThe').textContent=T.giai_the;
+  dat('locGiaiDoan',[['',T.tat_ca],['khai',T.khai_cuoc],
+      ['trung',T.trung_cuoc],['tan',T.tan_cuoc]],'');
+  document.getElementById('bTheDapAn').textContent='👁 '+T.xem_dap_an;
+  document.getElementById('bTheTiep').textContent='⏭ '+T.the_tiep_theo;
   localStorage.setItem('nn',m);
   veLuat(); veCham(); veDs(); veBiAn();
   // Ve lai o phan tich bang ngon ngu moi. Khong co dong nay thi noi dung cu
@@ -706,16 +739,16 @@ function bay(mv, xong){
 function bam(r,c){
   if(boQuaClickKeTiep){ boQuaClickKeTiep=false; return; }   // vua xu ly xong bang keo-tha
   if(dangXemLai) return;
-  if(!van) return;
+  if(!van && cheDoTrang!=='giai_the') return;
   if(dangCho&&!tuChoi()) return;
   if(chon){
     const mv=hopLe.find(m=>m[0]===chon[0]&&m[1]===chon[1]&&m[2]===r&&m[3]===c);
-    if(mv){ chon=null; di(mv); return; }
+    if(mv){ chon=null; thucHienNuoc(mv); return; }
   }
   const p=banCo[r][c];
   const minh=document.getElementById('benCam').value;
   const cuaMinh = minh==='trang' ? p===p.toUpperCase() : p===p.toLowerCase();
-  chon = (p!=='.'&&hopLe.some(m=>m[0]===r&&m[1]===c)&&(tuChoi()||cuaMinh))?[r,c]:null;
+  chon = (p!=='.'&&hopLe.some(m=>m[0]===r&&m[1]===c)&&(tuChoi()||cuaMinh||cheDoTrang==='giai_the'))?[r,c]:null;
   ve();
 }
 
@@ -726,7 +759,8 @@ function bam(r,c){
 function batDauKeo(e,r,c){
   if(e.button!==undefined && e.button!==0) return;      // chi nut trai chuot
   if(dangXemLai) return;
-  if(!van || (dangCho&&!tuChoi())) return;
+  if(!van && cheDoTrang!=='giai_the') return;
+  if(dangCho&&!tuChoi()) return;
   // Neu da chon mot quan va day la NUOC AN hop le tu quan do, day la buoc bam
   // de an quan - de nguyen cho click thuong xu ly, khong cuop lam keo-tha.
   if(chon){
@@ -736,7 +770,7 @@ function batDauKeo(e,r,c){
   const p=banCo[r][c];
   const minh=document.getElementById('benCam').value;
   const cuaMinh = minh==='trang' ? p===p.toUpperCase() : p===p.toLowerCase();
-  if(p==='.'||!(tuChoi()||cuaMinh)) return;
+  if(p==='.'||!(tuChoi()||cuaMinh||cheDoTrang==='giai_the')) return;
   if(!hopLe.some(m=>m[0]===r&&m[1]===c)) return;         // quan nay khong co nuoc di nao
   e.preventDefault();
   chon=[r,c]; ve();
@@ -774,7 +808,7 @@ function batDauKeo(e,r,c){
     const mr=Math.round((y-LE)/O), mc=Math.round((x-LE)/O);
     const [br,bc]=tuMH(mr,mc);
     const mv=hopLe.find(m=>m[0]===r&&m[1]===c&&m[2]===br&&m[3]===bc);
-    if(mv){ chon=null; di(mv); }
+    if(mv){ chon=null; thucHienNuoc(mv); }
     else ve();                  // tha khong dung o hop le -> quan tu bay ve cho cu
   };
   el.addEventListener('pointermove',diChuyen);
@@ -806,6 +840,17 @@ let lichSuDiem=[];
 let daLuuVanXong=false;
 // --- Xem lai van cu ---
 let dangXemLai=false, xemLaiBanGhi=null, xemLaiChiSo=0, xemLaiVanTam=null;
+// --- Giai the (bai tap chien thuat) ---
+let cheDoTrang='choi', theHienTai=null, theDaGiai=false, theChuoiDung=0;
+
+// Dieu phoi mot nuoc di NGUOI CHOI VUA CHON: ban co dang "Choi" thi thuc su
+// gui len /api/di nhu binh thuong; dang "Giai the" thi kiem tra dung/sai voi
+// dap an thay vi choi that. Gop mot cho de bam()/batDauKeo() khong phai tu
+// biet dang o che do nao.
+function thucHienNuoc(mv){
+  if(cheDoTrang==='giai_the') xuLyNuocThe(mv);
+  else di(mv);
+}
 
 function veCham(){
   const o=(ben,ten)=>{
@@ -993,6 +1038,97 @@ function veDoThiXemLai(){
   cont.innerHTML=`<svg width="${W}" height="${H}" style="display:block">
     <line x1="${P}" y1="${yCua(500)}" x2="${W-P}" y2="${yCua(500)}" stroke="var(--vien)" stroke-width="1"/>
     <path d="${duong}" fill="none" stroke="#4a9eff" stroke-width="1.6"/>${cham}</svg>`;
+}
+
+// --- Che do "Giai the": tan dung 16 trieu the co da co san lam bai tap -----
+// Moi bai tap la mot the co that (lay tu chinh du lieu huan luyen) noi ben
+// di CO MOT NUOC dua diem nhay len rat nhieu - xem tools/mine_puzzles.py de
+// biet cach loc ra ma khong ton chi phi tinh toan them.
+function moTrang(t){
+  cheDoTrang=t;
+  document.getElementById('bTrangChoi').classList.toggle('chinh', t==='choi');
+  document.getElementById('bTrangGiaiThe').classList.toggle('chinh', t==='giai_the');
+  document.getElementById('sidebarChoi').style.display = t==='choi' ? '' : 'none';
+  document.getElementById('sidebarGiaiThe').style.display = t==='giai_the' ? '' : 'none';
+  document.getElementById('duoiChoi').style.display = t==='choi' ? '' : 'none';
+  if(t==='giai_the'){
+    if(dangXemLai) thoatXemLai();
+    if(!theHienTai) theTiepTheo();
+  }else if(!van){
+    khoiPhucHoacMoi();       // lan dau chuyen tu Giai the sang ma chua co van nao
+  }
+}
+
+async function theTiepTheo(){
+  theDaGiai=false; chon=null; goiY=null; hopLe=[];
+  document.getElementById('phanHoiThe').innerHTML=
+    `<span class="mo2">${T.dang_tai}…</span>`;
+  const giai_doan=document.getElementById('locGiaiDoan').value||null;
+  const d=await goi('/api/giai-the-moi',{giai_doan});
+  if(!d||d.loi){
+    document.getElementById('phanHoiThe').innerHTML=
+      `<span class="mo2">⚠ ${(d&&d.loi)||T.khong_co_bai_tap}</span>`;
+    return;
+  }
+  theHienTai=d;
+  const moi=await goi('/api/nap-fen',{fen:d.fen});
+  if(!moi||moi.loi) return;
+  banCo=moi.ban_co.map(h=>h.split('')); hopLe=moi.nuoc_hop_le||[]; benDi=moi.ben_di;
+  vuaDi=null; ve(); veMuiTen();
+  thanh(500);                            // khong hien diem that - se lo dap an
+  document.getElementById('phanHoiThe').innerHTML =
+    `${T.nuoc_tot} <b>${d.ben_di==='trang'?T.do_:T.den_}</b>`;
+  document.getElementById('theBaoNhieu').textContent =
+    ({khai:T.khai_cuoc,trung:T.trung_cuoc,tan:T.tan_cuoc}[d.giai_doan]||'')
+    +' · +'+d.xoay_chuyen+' '+T.diem_tu;
+}
+
+// Giai thich nuoc dung DUA TREN DU LIEU THAT da co (diem truoc/sau tu chinh
+// Pikafish depth 10, va co an quan hay khong doc thang tu ban co) - khong
+// bay dat gi them, va KHONG the noi vi sao nuoc nguoi choi chon la sai (vi
+// chua bao gio cham diem nuoc do - can goi engine moi biet, ngoai pham vi
+// bai tap nay).
+function _giaiThichNuoc(){
+  const [r0,c0,r1,c1]=theHienTai.nuoc_dung;
+  const bi_an=banCo[r1][c1];
+  const truoc=theHienTai.diem_truoc, sau=theHienTai.diem_sau, xoay=theHienTai.xoay_chuyen;
+  let ly_do;
+  if(sau>=950||sau<=50) ly_do=T.giai_thich_quyet_dinh;
+  else if(bi_an!=='.') ly_do=T.giai_thich_an_quan.replace('{quan}',
+    TEN[bi_an.toUpperCase()][bi_an===bi_an.toUpperCase()?1:0]);
+  else ly_do=T.giai_thich_loi_the;
+  return `${truoc} → ${sau} (${xoay>=0?'+':''}${xoay} ${T.diem_tu}) — ${ly_do}`;
+}
+
+function xuLyNuocThe(mv){
+  if(theDaGiai||!theHienTai) return;
+  theDaGiai=true; hopLe=[]; chon=null;
+  const dung = JSON.stringify(mv)===JSON.stringify(theHienTai.nuoc_dung);
+  const e=document.getElementById('phanHoiThe');
+  const giaiThich=`<div style="margin-top:4px;font-size:12.5px;color:var(--mo)">`
+    +`${_giaiThichNuoc()}</div>`;
+  if(dung){
+    theChuoiDung++;
+    e.innerHTML=`<b style="color:#2ecc71">✔ ${T.the_dung}!</b> `
+      +`<span style="color:var(--mo)">(${T.chuoi_dung}: ${theChuoiDung})</span>${giaiThich}`;
+    amThanh(TEP.win?'win':'het');
+  }else{
+    theChuoiDung=0;
+    e.innerHTML=`<b style="color:#e74c3c">✘ ${T.the_sai}.</b> `
+      +`<span style="color:var(--mo)">${T.dap_an}: ${ghiNuoc(theHienTai.nuoc_dung,banCo)}</span>${giaiThich}`;
+    amThanh(TEP.thua?'thua':'het');
+  }
+  ve();
+  bay(theHienTai.nuoc_dung, ()=>{
+    const [r0,c0,r1,c1]=theHienTai.nuoc_dung;
+    banCo[r1][c1]=banCo[r0][c0]; banCo[r0][c0]='.';
+    vuaDi=theHienTai.nuoc_dung; ve();
+  });
+}
+
+function theXemDapAn(){
+  if(!theHienTai||theDaGiai) return;
+  xuLyNuocThe([-1,-1,-1,-1]);   // nuoc khong ai co the trung -> luon tinh la sai, chi de lo dap an
 }
 
 function capNhat(d){
