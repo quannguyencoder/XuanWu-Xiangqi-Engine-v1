@@ -1215,7 +1215,13 @@ function veDs(){
 
 fetch('/api/dia-chi',{method:'POST',body:'{}',
   headers:{'Content-Type':'application/json'}}).then(r=>r.json()).then(d=>{
-    if(d.lan) document.getElementById('chiaSe').textContent=T.chia_se+': '+d.lan;
+    if(!d.lan) return;
+    let s = T.chia_se+': '+d.lan.ip;
+    // Ten .local (Bonjour/mDNS): de nho va khong doi du IP bi cap lai, nhung
+    // chi chac chan vao duoc tu thiet bi Apple khac - Android/Windows ho tro
+    // mDNS khong on dinh nen van can ca IP lam phuong an chac an.
+    if(d.lan.local) s += `  ·  ${T.chia_se_local}: ${d.lan.local}`;
+    document.getElementById('chiaSe').textContent = s;
   }).catch(()=>{});
 
 function datNen(m){

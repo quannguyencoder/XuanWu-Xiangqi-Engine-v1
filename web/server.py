@@ -88,16 +88,31 @@ def _cham_diem(v: VanCo, giay: float = 0.3):
 
 
 def _dia_chi_lan(cong):
-    """Dia chi de may khac trong cung mang WiFi vao duoc."""
+    """Dia chi de may khac trong cung mang WiFi vao duoc: ca IP so va ten
+    .local (Bonjour/mDNS macOS phat san, khong can cau hinh gi).
+
+    Ten .local de nho hon va KHONG DOI khi router cap lai IP, nhung chi chac
+    chan vao duoc tu thiet bi Apple khac (iPhone/iPad/Mac) - Android va Windows
+    ho tro mDNS khong on dinh. Vi vay tra ca hai, IP van la phuong an chac an.
+    """
     import socket
+    ten_local = None
+    try:
+        h = socket.gethostname()
+        ten_local = h if h.endswith(".local") else f"{h}.local"
+    except Exception:
+        pass
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         ip = s.getsockname()[0]
         s.close()
-        return f"http://{ip}:{cong}/"
     except Exception:
         return None
+    return {
+        "ip": f"http://{ip}:{cong}/",
+        "local": f"http://{ten_local}:{cong}/" if ten_local else None,
+    }
 
 
 def _tranh_tu_thua(v: VanCo, nuoc, giay: float):
@@ -420,17 +435,13 @@ def main():
     # Chi trong mang noi bo, khong ra Internet - an toan cho may ca nhan.
     with socketserver.ThreadingTCPServer(("0.0.0.0", CONG), May) as may:
         dia_chi = f"http://127.0.0.1:{CONG}/"
-        import socket
-        try:
-            s_ = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s_.connect(("8.8.8.8", 80))
-            ip = s_.getsockname()[0]
-            s_.close()
-        except Exception:
-            ip = None
+        dc = _dia_chi_lan(CONG)
         print(f"\n  May nay      : {dia_chi}")
-        if ip:
-            print(f"  May khac     : http://{ip}:{CONG}/   (cung mang WiFi)")
+        if dc:
+            print(f"  May khac     : {dc['ip']}   (cung mang WiFi)")
+            if dc.get("local"):
+                print(f"  Ten de nho   : {dc['local']}   (thiet bi Apple khac, "
+                      f"khong doi du IP bi cap lai)")
         print("  Nhan Ctrl+C de tat\n")
         threading.Timer(0.8, lambda: webbrowser.open(dia_chi)).start()
         try:

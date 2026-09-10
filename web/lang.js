@@ -56,6 +56,7 @@ const NGON_NGU = {
     tong_ket:'Tổng kết ván', ho_nang_nhat:'Nước hớ nặng nhất',
     khong_ho:'không có nước hớ nào', so_nuoc_ngan:'nước',
     huy:'Huỷ', bat_dau:'Bắt đầu',
+    chia_se_local:'Thiết bị Apple khác',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -112,6 +113,7 @@ const NGON_NGU = {
     tong_ket:'Game review', ho_nang_nhat:'Biggest blunder',
     khong_ho:'no blunders', so_nuoc_ngan:'move',
     huy:'Cancel', bat_dau:'Start',
+    chia_se_local:'Other Apple devices',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -168,5 +170,6 @@ const NGON_NGU = {
     tong_ket:'对局复盘', ho_nang_nhat:'最大失误',
     khong_ho:'没有明显失误', so_nuoc_ngan:'着',
     huy:'取消', bat_dau:'开始',
+    chia_se_local:'其他苹果设备',
   },
 };
