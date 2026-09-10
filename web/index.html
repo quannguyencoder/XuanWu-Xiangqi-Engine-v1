@@ -43,15 +43,6 @@
   html[data-nen="sang"] .ds span:not(:first-child){color:#374151}
   html[data-nen="sang"] .mo2{color:#6b7280}
 
-  /* Mau ban co: TRUC GIAO voi sang/toi (--nen/--the/... o tren), chi doi
-     --go/--luoi. Chu y dung mau qua nhat cho --go, vi quan co dung nen do
-     tuong phan (radial-gradient trang nhat) can go sam de doc chu duoc.
-     "do" (do-tuong-phan-thap voi quan do, da doi thanh xanh lam) doi ten
-     thanh "lam" cho dung mau - giu mau nau-do cu se lan vao vien/chu quan
-     Do (var(--do):#c0392b), kho phan biet quan Do voi ban co luc choi. */
-  html[data-ban="lam"]{--go:#7c9cc4;--luoi:#3c5878}
-  html[data-ban="da"]{--go:#9198a0;--luoi:#4d545c}
-  html[data-ban="xanh"]{--go:#80ae87;--luoi:#3a5c41}
   /* Thanh danh gia GIU NGUYEN mau dam/sang o ca hai giao dien - no la thang
      diem rieng (nhu chess.com), khong phai noi dung trang nen khong doi theo
      sang/toi. Chi them vien de tach voi nen trang sang. */
@@ -240,7 +231,6 @@
         <button onclick="datNN('en')" id="nnen">EN</button>
         <button onclick="datNN('zh')" id="nnzh">中</button>
         <button onclick="doiNen()" id="nutNen" title="Sáng / Tối">🌙</button>
-        <button onclick="doiMauBan()" id="nutMauBan" title="Đổi màu bàn cờ">🎨</button>
         <button onclick="moTroGiup()" id="nutTroGiup" title="Trợ giúp">❓</button>
       </div>
     </div>
@@ -921,6 +911,18 @@ function batDauKeo(e,r,c){
   if(dangXemLai) return;
   if(!van && cheDoTrang!=='giai_the') return;
   if(dangCho&&!tuChoi()) return;
+  // Bam lai CHINH quan dang chon -> bo chon, nhu co vua/chess.com. Xu ly ngay
+  // tai pointerdown (khong doi su kien click tu nhien phia sau): ve() ben duoi
+  // xoa va tao lai toan bo phan tu .quan, nen phan tu nhan mousedown ban dau
+  // bi go khoi DOM giua chung - nhieu trinh duyet khong con phat 'click' cho
+  // muc tieu da bi go, khien cach xu ly o bam() (dua vao click) im lang khong
+  // chay. boQuaClickKeTiep chan bam() xu ly trung neu click van lot qua duoc.
+  if(chon && chon[0]===r && chon[1]===c){
+    boQuaClickKeTiep=true;
+    setTimeout(()=>{boQuaClickKeTiep=false;},300);
+    chon=null; ve();
+    return;
+  }
   // Neu da chon mot quan va day la NUOC AN hop le tu quan do, day la buoc bam
   // de an quan - de nguyen cho click thuong xu ly, khong cuop lam keo-tha.
   if(chon){
@@ -2001,23 +2003,10 @@ function datNen(m){
 const doiNen=()=>datNen(
   document.documentElement.getAttribute('data-nen')==='sang' ? 'toi' : 'sang');
 
-// Mau ban co: xoay vong qua 4 lua chon moi lan bam, luu rieng khoi sang/toi.
-const CAC_MAU_BAN=['go','lam','da','xanh'];
-function datMauBan(m){
-  if(m==='go') document.documentElement.removeAttribute('data-ban');
-  else document.documentElement.setAttribute('data-ban', m);
-  localStorage.setItem('mau_ban', m);
-}
-function doiMauBan(){
-  const hien=localStorage.getItem('mau_ban')||'go';
-  const ke=CAC_MAU_BAN[(CAC_MAU_BAN.indexOf(hien)+1)%CAC_MAU_BAN.length];
-  datMauBan(ke);
-}
 function moTroGiup(){
   moTabTroGiup('nguoi_moi');
   document.querySelector('.luat').scrollIntoView({behavior:'smooth'});
 }
-datMauBan(localStorage.getItem('mau_ban')||'go');
 
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
