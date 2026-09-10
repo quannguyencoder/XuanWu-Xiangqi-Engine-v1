@@ -169,6 +169,9 @@
   .duoi{max-width:1500px;margin:0 auto;padding:0 18px;display:grid;
         grid-template-columns:1fr 1fr;gap:12px}
   .luat{max-width:1500px;margin:0 auto;padding:0 18px 40px}
+  .tab-tro-giup{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;
+                padding-bottom:14px;border-bottom:1px solid var(--vien)}
+  .tab-tro-giup button{flex:0 0 auto}
   .luat h2{font-size:12px;margin:22px 0 12px}
   .bang-quan{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
              gap:10px}
@@ -235,6 +238,7 @@
         <button onclick="datNN('zh')" id="nnzh">中</button>
         <button onclick="doiNen()" id="nutNen" title="Sáng / Tối">🌙</button>
         <button onclick="doiMauBan()" id="nutMauBan" title="Đổi màu bàn cờ">🎨</button>
+        <button onclick="moTroGiup()" id="nutTroGiup" title="Trợ giúp">❓</button>
       </div>
     </div>
 
@@ -380,17 +384,31 @@
 </div>
 
 <div class="luat">
-  <h2 id="tHuongDan">Hướng dẫn sử dụng</h2>
-  <div class="ds-luat" id="dsHuongDan"></div>
+  <div class="tab-tro-giup">
+    <button onclick="moTabTroGiup('nguoi_moi')" id="tabNguoiMoi" class="chinh">🔰 Người mới bắt đầu</button>
+    <button onclick="moTabTroGiup('cach_dung')" id="tabCachDung">🧭 Cách dùng trang web</button>
+    <button onclick="moTabTroGiup('luat_chi_tiet')" id="tabLuatChiTiet">📋 Luật chi tiết</button>
+  </div>
 
-  <h2 id="tCachDi">Cách đi quân</h2>
-  <p style="color:var(--mo);font-size:13px;margin:-4px 0 12px" id="tGhiChu"></p>
-  <div class="bang-quan" id="bangQuan"></div>
-  <h2 id="tCachGhi">Cách ghi nước đi</h2>
-  <div class="ds-luat" id="cachGhi"></div>
+  <div id="panelNguoiMoi">
+    <p id="tNmChao" style="color:var(--mo);font-size:13.5px;margin:0 0 14px"></p>
+    <div class="ds-luat" id="dsNguoiMoi"></div>
+  </div>
 
-  <h2 id="tLuatDacBiet">Luật đặc biệt</h2>
-  <div class="ds-luat" id="dsLuat"></div>
+  <div id="panelCachDung" style="display:none">
+    <div class="ds-luat" id="dsHuongDan"></div>
+  </div>
+
+  <div id="panelLuatChiTiet" style="display:none">
+    <h2 id="tCachDi">Cách đi quân</h2>
+    <p style="color:var(--mo);font-size:13px;margin:-4px 0 12px" id="tGhiChu"></p>
+    <div class="bang-quan" id="bangQuan"></div>
+    <h2 id="tCachGhi">Cách ghi nước đi</h2>
+    <div class="ds-luat" id="cachGhi"></div>
+
+    <h2 id="tLuatDacBiet">Luật đặc biệt</h2>
+    <div class="ds-luat" id="dsLuat"></div>
+  </div>
 </div>
 
 <div class="lop-modal" id="lopVanMoi">
@@ -654,8 +672,26 @@ function datNN(m){
   if(banCo) veLai();
 }
 
+// Ba tab o cuoi trang: Nguoi moi bat dau / Cach dung trang web / Luat chi
+// tiet - truoc day la ba khoi noi dung dai xep CHONG LEN NHAU, kho quet mat
+// tim dung phan can. Nho lua chon tab qua localStorage.
+function moTabTroGiup(tab){
+  ['nguoi_moi','cach_dung','luat_chi_tiet'].forEach(t=>{
+    const ten={nguoi_moi:'NguoiMoi',cach_dung:'CachDung',luat_chi_tiet:'LuatChiTiet'}[t];
+    document.getElementById('tab'+ten).classList.toggle('chinh', t===tab);
+    document.getElementById('panel'+ten).style.display = t===tab ? '' : 'none';
+  });
+  localStorage.setItem('tab_tro_giup', tab);
+}
+
 function veLuat(){
-  document.getElementById('tHuongDan').textContent = T.huong_dan;
+  document.getElementById('tabNguoiMoi').textContent = '🔰 '+T.tab_nguoi_moi;
+  document.getElementById('tabCachDung').textContent = '🧭 '+T.tab_cach_dung;
+  document.getElementById('tabLuatChiTiet').textContent = '📋 '+T.tab_luat_chi_tiet;
+  document.getElementById('tNmChao').textContent = T.nm_chao;
+  document.getElementById('dsNguoiMoi').innerHTML =
+    ['nm_muc_tieu','nm_ban_co','nm_quan_co','nm_meo','nm_bat_dau'].map(k=>
+      `<div class="y"><b>${T[k+'_t']}</b><br>${T[k+'_n']}</div>`).join('');
   document.getElementById('dsHuongDan').innerHTML =
     ['hd1','hd2','hd3','hd4','hd5','hd6'].map(k=>
       `<div class="y"><b>${T[k+'_t']}</b><br>${T[k+'_n']}</div>`).join('');
@@ -1927,12 +1963,17 @@ function doiMauBan(){
   const ke=CAC_MAU_BAN[(CAC_MAU_BAN.indexOf(hien)+1)%CAC_MAU_BAN.length];
   datMauBan(ke);
 }
+function moTroGiup(){
+  moTabTroGiup('nguoi_moi');
+  document.querySelector('.luat').scrollIntoView({behavior:'smooth'});
+}
 datMauBan(localStorage.getItem('mau_ban')||'go');
 
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
 document.getElementById('oTen').value=localStorage.getItem('qisheng_ten')||'';
 datChiTietKyThuat(localStorage.getItem('chi_tiet_ky_thuat')==='1');
+moTabTroGiup(localStorage.getItem('tab_tro_giup')||'nguoi_moi');
 tinhKichThuocBan();
 veBan();
 khoiPhucHoacMoi();
