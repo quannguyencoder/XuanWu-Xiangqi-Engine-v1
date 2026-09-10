@@ -1240,6 +1240,12 @@ document.addEventListener('keydown', e=>{
   e.preventDefault();
   lui();
 });
+
+// Dang ky service worker RONG (xem sw.js) - chi de Chrome (nhat la Android)
+// chiu hien nut "Cai dat ung dung", khong lien quan gi den luu cache.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
