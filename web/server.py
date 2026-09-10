@@ -64,6 +64,32 @@ def _nap_puzzles():
             except json.JSONDecodeError:
                 continue
 
+
+# Kho the co khai cuoc THAT tu chessdb.cn (371.855 the, xem
+# tools/crawl_chessdb.py). CHI CO FEN - khong co ten khai cuoc hay ti le
+# thang, vi day von la du lieu diem xuat phat cho Pikafish tu choi, khong
+# phai kho du lieu khai cuoc co chu thich. Duyet duoc that, nhung khong bia
+# them thong ke khong co.
+_DUONG_KHAI_CUOC = os.path.join(os.path.dirname(THU_MUC), "data", "seeds_chessdb.jsonl")
+_khai_cuoc = []
+
+
+def _nap_khai_cuoc():
+    global _khai_cuoc
+    if _khai_cuoc or not os.path.exists(_DUONG_KHAI_CUOC):
+        return
+    with open(_DUONG_KHAI_CUOC, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+                if d.get("fen"):
+                    _khai_cuoc.append(d["fen"])
+            except json.JSONDecodeError:
+                continue
+
 # Van DA KET THUC duoc luu rieng ra file JSON (khong lien quan gi den _van o
 # duoi - do la ban dang choi DO trong RAM). Moi van la mot file, don gian hon
 # CSDL that va du dung cho mot may ca nhan. Ma van luon dung dinh dang
@@ -252,6 +278,8 @@ class May(http.server.SimpleHTTPRequestHandler):
                 return self._xoa_van(req)
             if duong == "/api/giai-the-moi":
                 return self._giai_the_moi(req)
+            if duong == "/api/duyet-khai-cuoc":
+                return self._duyet_khai_cuoc(req)
             return self._tra({"loi": "khong co duong dan nay"}, 404)
         except Exception as e:                # tra loi ro thay vi treo trang
             return self._tra({"loi": f"{type(e).__name__}: {e}"}, 500)
@@ -572,6 +600,15 @@ class May(http.server.SimpleHTTPRequestHandler):
             "do_kho": kho_cua(p["xoay_chuyen"]),
         })
 
+    # -- duyet khai cuoc that tu chessdb (xem _nap_khai_cuoc o tren) --------
+
+    def _duyet_khai_cuoc(self, req):
+        if not _khai_cuoc:
+            return self._tra({"loi": "chua co du lieu khai cuoc - can data/seeds_chessdb.jsonl"}, 404)
+        so_luong = min(50, max(1, int(req.get("so_luong", 20))))
+        mau = random.sample(_khai_cuoc, min(so_luong, len(_khai_cuoc)))
+        return self._tra({"ds": mau, "tong": len(_khai_cuoc)})
+
 
 def main():
     print("XuanWu - dang khoi dong...")
@@ -583,6 +620,9 @@ def main():
     _nap_puzzles()
     print(f"  bai tap chien thuat: {len(_puzzles):,} the" if _puzzles
           else "  bai tap chien thuat: khong co (chay tools/mine_puzzles.py)")
+    _nap_khai_cuoc()
+    print(f"  kho khai cuoc: {len(_khai_cuoc):,} the" if _khai_cuoc
+          else "  kho khai cuoc: khong co (can data/seeds_chessdb.jsonl)")
     socketserver.TCPServer.allow_reuse_address = True
     # Lang nghe tren moi dia chi de may khac trong cung mang WiFi vao duoc.
     # Chi trong mang noi bo, khong ra Internet - an toan cho may ca nhan.

@@ -345,6 +345,9 @@
       <div class="hang">
         <button onclick="moLichSu()" id="bLichSu">📜 Lịch sử ván đấu</button>
       </div>
+      <div class="hang">
+        <button onclick="moKhaiCuoc()" id="bKhaiCuoc">📖 Duyệt khai cuộc</button>
+      </div>
       <div class="chia" id="chiaSe"></div>
     </div>
     </div>
@@ -409,6 +412,20 @@
     <div id="dsVanDaLuu" style="flex:1 1 auto;overflow-y:auto;min-height:0"></div>
     <div class="hang nut-hang" style="flex:0 0 auto;margin-top:12px">
       <button onclick="dongLichSu()" id="bDongLichSu">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div class="lop-modal" id="lopKhaiCuoc">
+  <div class="hop-modal" style="max-width:480px;max-height:82vh;
+       display:flex;flex-direction:column">
+    <h2 id="tHopKhaiCuoc" style="flex:0 0 auto">Duyệt khai cuộc</h2>
+    <div id="khaiCuocGhiChu" style="flex:0 0 auto;font-size:12.5px;color:var(--mo);
+         margin-bottom:10px"></div>
+    <div id="dsKhaiCuoc" style="flex:1 1 auto;overflow-y:auto;min-height:0"></div>
+    <div class="hang nut-hang" style="flex:0 0 auto;margin-top:12px">
+      <button onclick="dongKhaiCuoc()" id="bDongKhaiCuoc">Đóng</button>
+      <button class="chinh" onclick="taiMauKhaiCuocMoi()" id="bKhaiCuocMoi">🔀 Mẫu khác</button>
     </div>
   </div>
 </div>
@@ -581,6 +598,12 @@ function datNN(m){
   document.getElementById('bDongLichSu').textContent=T.dong;
   if(document.getElementById('lopLichSu').style.display==='flex')
     veDanhSachVan(danhSachVanCuoi);           // doi ngon ngu luc dang mo -> ve lai
+  document.getElementById('bKhaiCuoc').textContent='📖 '+T.duyet_khai_cuoc;
+  document.getElementById('tHopKhaiCuoc').textContent=T.duyet_khai_cuoc;
+  document.getElementById('bDongKhaiCuoc').textContent=T.dong;
+  document.getElementById('bKhaiCuocMoi').textContent='🔀 '+T.mau_khac;
+  if(document.getElementById('lopKhaiCuoc').style.display==='flex')
+    document.getElementById('khaiCuocGhiChu').textContent=T.khai_cuoc_ghi_chu;
   document.getElementById('bXlTruoc').textContent='◀ '+T.truoc_tu;
   document.getElementById('bXlSau').textContent=T.sau_tu+' ▶';
   document.getElementById('bThoatXemLai').textContent='✕ '+T.thoat_xem_lai;
@@ -1598,6 +1621,49 @@ document.getElementById('lopVanMoi').addEventListener('click',e=>{
 document.getElementById('lopLichSu').addEventListener('click',e=>{
   if(e.target.id==='lopLichSu') dongLichSu();
 });
+document.getElementById('lopKhaiCuoc').addEventListener('click',e=>{
+  if(e.target.id==='lopKhaiCuoc') dongKhaiCuoc();
+});
+
+// --- Duyet khai cuoc that tu chessdb (371.855 the, chi co FEN - KHONG co
+// ten hay ti le thang, vi du lieu goc von la diem xuat phat cho Pikafish tu
+// choi, khong phai kho du lieu co chu thich). Hien mot mau ngau nhien, bam
+// "Mau khac" de xin mau moi tu server.
+async function moKhaiCuoc(){
+  document.getElementById('khaiCuocGhiChu').textContent=T.khai_cuoc_ghi_chu;
+  await taiMauKhaiCuocMoi();
+  document.getElementById('lopKhaiCuoc').style.display='flex';
+}
+function dongKhaiCuoc(){
+  document.getElementById('lopKhaiCuoc').style.display='none';
+}
+async function taiMauKhaiCuocMoi(){
+  const e=document.getElementById('dsKhaiCuoc');
+  e.innerHTML=`<div class="mo2" style="padding:10px 0">${T.dang_tai}…</div>`;
+  const d=await goi('/api/duyet-khai-cuoc',{so_luong:20});
+  if(!d||d.loi){ e.innerHTML=`<div class="mo2" style="padding:10px 0">⚠ ${(d&&d.loi)||''}</div>`; return; }
+  e.innerHTML=(d.ds||[]).map((fen,i)=>
+    `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;
+         border-bottom:1px solid var(--vien);font-size:13px">
+      <div style="flex:1;min-width:0;font-family:ui-monospace,Menlo,monospace;
+           font-size:11.5px;color:var(--mo);overflow:hidden;text-overflow:ellipsis;
+           white-space:nowrap">${escHtml(fen)}</div>
+      <button onclick='batDauTuKhaiCuoc(${JSON.stringify(fen)})'
+              style="flex:0 0 auto;padding:6px 10px">${T.bat_dau}</button>
+    </div>`).join('');
+}
+async function batDauTuKhaiCuoc(fen){
+  dongKhaiCuoc();
+  const d=await goi('/api/nap-fen',{fen});
+  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
+  van=d.ma_van; chon=null; goiY=null; lichSu=[]; lichSuDiem=[]; quanBiAn=[]; banTruocNuoc=[]; vuaDi=null; phien++;
+  vanGoc={kieu:'fen',fen}; daLuuVanXong=false; dongHoDatLai();
+  document.getElementById('ds').innerHTML='';
+  veBiAn();
+  capNhat(d); veDs();
+  luuVan();
+  phanTich();
+}
 
 async function vanMoi(){
   const ben=document.getElementById('benCam').value;

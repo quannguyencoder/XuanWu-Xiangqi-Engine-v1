@@ -76,6 +76,11 @@ const NGON_NGU = {
     da_giai:'Đã giải', ti_le_dung:'Tỉ lệ đúng', dong_ho:'Thời gian',
     canh_bao_ho:'Cảnh báo nước hớ', canh_bao_ho_noi_dung:'Nước này có thể mất',
     van_di_tiep:'Vẫn đi nước này?',
+    duyet_khai_cuoc:'Duyệt khai cuộc',
+    khai_cuoc_ghi_chu:'371.855 thế cờ thật lấy từ chessdb.cn. Chỉ có thế cờ,'
+      +' không có tên gọi hay tỉ lệ thắng - dữ liệu gốc vốn dùng làm điểm'
+      +' xuất phát cho engine tự chơi, không phải kho khai cuộc có chú thích.',
+    mau_khac:'Mẫu khác',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -152,6 +157,11 @@ const NGON_NGU = {
     da_giai:'Solved', ti_le_dung:'Accuracy', dong_ho:'Time',
     canh_bao_ho:'Blunder warning', canh_bao_ho_noi_dung:'This move may lose',
     van_di_tiep:'Play it anyway?',
+    duyet_khai_cuoc:'Browse openings',
+    khai_cuoc_ghi_chu:'371,855 real positions from chessdb.cn. Positions only -'
+      +' no names or win rates. This data was originally collected as starting'
+      +' points for engine self-play, not an annotated opening database.',
+    mau_khac:'Different sample',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -228,5 +238,9 @@ const NGON_NGU = {
     da_giai:'已完成', ti_le_dung:'正确率', dong_ho:'时间',
     canh_bao_ho:'漏着警告', canh_bao_ho_noi_dung:'这步棋可能损失',
     van_di_tiep:'仍要这样走吗？',
+    duyet_khai_cuoc:'浏览开局',
+    khai_cuoc_ghi_chu:'来自 chessdb.cn 的 371,855 个真实残局。只有局面，没有名称或胜率 -'
+      +'原始数据本是用作引擎自对弈的起始点，并非带注释的开局库。',
+    mau_khac:'换一批',
   },
 };
