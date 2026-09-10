@@ -1,0 +1,4 @@
+# Chi danh cho CHAY WEB (web/server.py), khong phai huan luyen.
+# Tach rieng khoi requirements.txt vi file do keo theo torch (~1-2GB) -
+# khong can thiet cho web, chi lam anh Docker nang va build lau hon.
+numpy>=1.24

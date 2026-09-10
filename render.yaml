@@ -1,0 +1,16 @@
+# Cau hinh trien khai cho Render.com (mien phi). Khi ket noi repo GitHub nay
+# voi Render va chon "New Blueprint", Render doc file nay va tu dat het cac
+# muc - khong can tu tay chinh tung o.
+#
+# Goi mien phi "ngu" sau ~15 phut khong ai vao, lan mo lai mat khoang
+# 30 giay - 1 phut. Day la gioi han cua goi mien phi, khong phai loi cau hinh.
+services:
+  - type: web
+    name: xuanwu-xiangqi
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -38,7 +38,9 @@ from engine.game_rules import VanCo, DANG_CHOI, TRANG_THANG, DEN_THANG
 from engine import strongest
 from tools.collect_openings import board_to_fen, fen_to_board, iccs_to_move
 
-CONG = 8000
+# Render (va da so nen tang hosting) cap cong qua bien moi truong PORT thay
+# vi de co dinh - doc bien do neu co, mac dinh 8000 nhu chay tren may ca nhan.
+CONG = int(os.environ.get("PORT", 8000))
 MUC_DO = {"de": 0.5, "vua": 3.0, "kho": 10.0}
 
 # Bai tap chien thuat: khai thac tu 16 trieu the co huan luyen da co san,
@@ -577,7 +579,11 @@ def main():
                 print(f"  Ten de nho   : {dc['local']}   (thiet bi Apple khac, "
                       f"khong doi du IP bi cap lai)")
         print("  Nhan Ctrl+C de tat\n")
-        threading.Timer(0.8, lambda: webbrowser.open(dia_chi)).start()
+        # Chi tu mo trinh duyet khi chay tren MAY CA NHAN. Tren may chu that
+        # (Render va tuong tu) luon co bien PORT, khong co man hinh GUI de mo
+        # trinh duyet - goi webbrowser.open() o do vo nghia va co the loi.
+        if "PORT" not in os.environ:
+            threading.Timer(0.8, lambda: webbrowser.open(dia_chi)).start()
         try:
             may.serve_forever()
         except KeyboardInterrupt:
