@@ -1,0 +1,16 @@
+{
+  "name": "XuanWu 玄武 — Xiangqi Engine",
+  "short_name": "XuanWu",
+  "description": "Bàn cờ tướng phân tích bằng engine XuanWu, chạy local",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16181d",
+  "theme_color": "#c0392b",
+  "lang": "vi",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
