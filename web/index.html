@@ -42,6 +42,13 @@
   html[data-nen="sang"] .nhan{background:#eae6de;color:#374151}
   html[data-nen="sang"] .ds span:not(:first-child){color:#374151}
   html[data-nen="sang"] .mo2{color:#6b7280}
+
+  /* Mau ban co: TRUC GIAO voi sang/toi (--nen/--the/... o tren), chi doi
+     --go/--luoi. Chu y dung mau qua nhat cho --go, vi quan co dung nen do
+     tuong phan (radial-gradient trang nhat) can go sam de doc chu duoc. */
+  html[data-ban="do"]{--go:#c96b53;--luoi:#7a3524}
+  html[data-ban="da"]{--go:#8a9199;--luoi:#4d5459}
+  html[data-ban="xanh"]{--go:#7fa88f;--luoi:#3f5f4d}
   /* Thanh danh gia GIU NGUYEN mau dam/sang o ca hai giao dien - no la thang
      diem rieng (nhu chess.com), khong phai noi dung trang nen khong doi theo
      sang/toi. Chi them vien de tach voi nen trang sang. */
@@ -119,6 +126,7 @@
         letter-spacing:0}
   .pv .mt{color:var(--mo);margin:0 2px;opacity:.6}
   .pv .n-do{color:#ff7a6b;font-weight:600}
+  .nuoc-cu:hover{text-decoration:underline}
   .pv .n-den{color:var(--chu)}
   .pv b{color:var(--chu)}
   .ky{display:grid;grid-template-columns:auto 1fr;gap:3px 16px;font-size:13px}
@@ -226,6 +234,7 @@
         <button onclick="datNN('en')" id="nnen">EN</button>
         <button onclick="datNN('zh')" id="nnzh">中</button>
         <button onclick="doiNen()" id="nutNen" title="Sáng / Tối">🌙</button>
+        <button onclick="doiMauBan()" id="nutMauBan" title="Đổi màu bàn cờ">🎨</button>
       </div>
     </div>
 
@@ -279,6 +288,9 @@
       <div class="diem-to"><span id="diemTo">505</span><small> / 1000</small></div>
       <div id="nhanDiem" class="nhan">Cân bằng</div>
       <div id="ttVan" style="margin-top:9px;font-size:13.5px"></div>
+      <div id="dongHo" style="margin-top:9px;display:grid;
+           grid-template-columns:1fr 1fr;gap:8px;font-size:13px;
+           font-variant-numeric:tabular-nums"></div>
     </div>
 
     <div class="the">
@@ -1023,21 +1035,39 @@ async function xoaVanDaLuu(ma){
 // Dung lai DUNG co che phat lai nuoc di da xay cho khoi phuc sau F5
 // (/api/lui voi so_nuoc + fen_goc) - khong viet rieng logic di quan o JS,
 // tranh hai bo code co the lech nhau khi luat thay doi sau nay.
-async function xemLai(ma){
-  const d=await goi('/api/xem-van',{ma});
-  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'không mở được ván'); return; }
-  dongLichSu();
-  xemLaiBanGhi=d;
-  const moi = d.fen_goc
-    ? await goi('/api/nap-fen',{fen:d.fen_goc})
+// Buoc chung de vao che do xem lai, du nguon la MOT VAN DA LUU (xemLai) hay
+// CHINH VAN DANG CHOI (xemLaiTaiCho, bam vao nuoc trong "Nuoc da di") - ca
+// hai deu can tao mot van tam roi phat lai qua /api/lui, chi khac o dau lay
+// ban ghi {fen_goc, lich_su, lich_su_diem, ten}.
+async function _batDauXemLai(banGhi, chiSoBatDau){
+  xemLaiBanGhi=banGhi;
+  const moi = banGhi.fen_goc
+    ? await goi('/api/nap-fen',{fen:banGhi.fen_goc})
     : await goi('/api/van-moi',{nguoi_cam:'trang',muc_do:'de'});
   if(!moi||moi.loi) return;
   xemLaiVanTam=moi.ma_van;
   dangXemLai=true; chon=null; goiY=null;
   document.getElementById('theXemLai').style.display='block';
   document.getElementById('tXemLai').textContent=T.xem_lai_van
-    +(d.ten?' — '+escHtml(d.ten):'');
-  await nhayXemLai((d.lich_su||[]).length);   // mac dinh hien the co CUOI ván
+    +(banGhi.ten?' — '+escHtml(banGhi.ten):'');
+  await nhayXemLai(chiSoBatDau);
+}
+
+async function xemLai(ma){
+  const d=await goi('/api/xem-van',{ma});
+  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'không mở được ván'); return; }
+  dongLichSu();
+  await _batDauXemLai(d, (d.lich_su||[]).length);   // mac dinh hien the co CUOI ván
+}
+
+// Bam vao mot nuoc trong "Nuoc da di" cua VAN DANG CHOI - xem lai the co
+// NGAY SAU nuoc do, dung du lieu san co (khong can goi /api/xem-van).
+async function xemLaiTaiCho(chiSo){
+  if(dangXemLai||dangCho||!lichSu.length) return;
+  await _batDauXemLai({
+    fen_goc: vanGoc.kieu==='fen' ? vanGoc.fen : null,
+    lich_su: lichSu, lich_su_diem: lichSuDiem, ten: null,
+  }, chiSo);
 }
 async function veXemLai(){
   const tong=(xemLaiBanGhi.lich_su||[]).length;
@@ -1100,7 +1130,34 @@ function moTrang(t){
   }else if(!van){
     khoiPhucHoacMoi();       // lan dau chuyen tu Giai the sang ma chua co van nao
   }
+  veDongHo();
 }
+
+// --- Dong ho: dem THOI GIAN SUY NGHI thuc te cua tung ben trong VAN DANG
+// CHOI - thuan tuy tham khao/luyen tap, KHONG anh huong luat (khong xu thua
+// vi het gio) va KHONG luu lai qua lan tai trang, vi day chi la dong ho
+// phien lam viec hien tai, khong phai dong ho tran dau chinh thuc.
+let dongHoGiay={trang:0, den:0};
+function dongHoDatLai(){ dongHoGiay={trang:0,den:0}; veDongHo(); }
+function veDongHo(){
+  const e=document.getElementById('dongHo');
+  if(!e) return;
+  const dangChoi = cheDoTrang==='choi' && !dangXemLai && !!van;
+  e.style.display = dangChoi ? 'grid' : 'none';
+  if(!dangChoi) return;
+  const fmt=s=>{const p=n=>String(n).padStart(2,'0'); return `${p(Math.floor(s/60))}:${p(s%60)}`;};
+  const kieu=(ben)=>benDi===ben ? 'font-weight:700' : 'color:var(--mo)';
+  e.innerHTML=`<span style="${kieu('trang')}">● ${T.do_} ${fmt(dongHoGiay.trang)}</span>`
+    +`<span style="${kieu('den')}">● ${T.den_} ${fmt(dongHoGiay.den)}</span>`;
+}
+setInterval(()=>{
+  // Dang cho ket qua tu server (engine dang nghi, khong phai nguoi choi) thi
+  // tam dung dong ho - thoi gian may nghi da hien rieng o cho khac roi.
+  if(cheDoTrang!=='choi'||dangXemLai||!van||dangCho) return;
+  if(benDi!=='trang'&&benDi!=='den') return;
+  dongHoGiay[benDi]++;
+  veDongHo();
+}, 1000);
 
 // --- Tien do Giai the: luu LAU DAI qua localStorage, khong mat khi tai lai
 // trang. "Da gap" chi cap so luong gan nhat de khong gui len mot mang vo han
@@ -1219,6 +1276,7 @@ function theXemDapAn(){
 function capNhat(d){
   banCo=d.ban_co.map(h=>h.split('')); hopLe=d.nuoc_hop_le||[]; benDi=d.ben_di;
   if(d.diem!==undefined) thanh(d.diem);
+  veDongHo();
   const t=document.getElementById('ttVan'), minh=document.getElementById('benCam').value;
   if(d.trang_thai!=='dang_choi'){
     const ai={trang_thang:'trang',den_thang:'den'}[d.trang_thai];
@@ -1371,6 +1429,7 @@ function suyRaBiAn(ban){
 // Tach rieng ra day de chi co MOT noi phat lai nuoc di, khong co hai ban
 // logic co the lech nhau khi luat thay doi sau nay.
 async function khoiPhucTu(luu){
+  dongHoDatLai();
   document.getElementById('benCam').value=luu.benCam||'trang';
   document.getElementById('cheDo').value=luu.cheDo||'may';
   document.getElementById('mucDo').value=luu.mucDo||'vua';
@@ -1498,7 +1557,7 @@ async function vanMoi(){
     muc_do:document.getElementById('mucDo').value});
   if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
   van=d.ma_van; chon=null; goiY=null; lichSu=[]; lichSuDiem=[]; quanBiAn=[]; banTruocNuoc=[]; phien++;
-  vanGoc={kieu:'nuoc'}; daLuuVanXong=false;
+  vanGoc={kieu:'nuoc'}; daLuuVanXong=false; dongHoDatLai();
   veBiAn();
   vuaDi=d.nuoc_may||null; diemTruoc=505;
   if(d.nuoc_may) lichSu.push(d.nuoc_may);
@@ -1673,9 +1732,14 @@ function veDs(){
   for(let i=0;i<lichSu.length;i+=2){
     const d=document.createElement('div');
     const g=(k)=>lichSu[k]?ghiNuoc(lichSu[k], banTruocNuoc[k]):'';
+    // Bam vao mot nuoc -> xem lai the co NGAY SAU nuoc do (khong doi trang
+    // thai van dang choi, chi "nhin lai" - thoat ra bang nut o thanh xem lai).
+    const nut=(k)=>lichSu[k]
+      ? `<span class="nuoc-cu" onclick="xemLaiTaiCho(${k+1})" `
+        +`style="cursor:pointer" title="${T.xem_lai}">${g(k)}</span>` : '';
     d.innerHTML=`<span>${i/2+1}.</span>
-      <span style="color:#ff6b5a;font-weight:600">${g(i)}</span>
-      <span style="color:#dfe3ea">${g(i+1)}</span>`;
+      <span style="color:#ff6b5a;font-weight:600">${nut(i)}</span>
+      <span style="color:#dfe3ea">${nut(i+1)}</span>`;
     ds.appendChild(d);
   }
   ds.scrollTop=ds.scrollHeight;
@@ -1699,6 +1763,20 @@ function datNen(m){
 }
 const doiNen=()=>datNen(
   document.documentElement.getAttribute('data-nen')==='sang' ? 'toi' : 'sang');
+
+// Mau ban co: xoay vong qua 4 lua chon moi lan bam, luu rieng khoi sang/toi.
+const CAC_MAU_BAN=['go','do','da','xanh'];
+function datMauBan(m){
+  if(m==='go') document.documentElement.removeAttribute('data-ban');
+  else document.documentElement.setAttribute('data-ban', m);
+  localStorage.setItem('mau_ban', m);
+}
+function doiMauBan(){
+  const hien=localStorage.getItem('mau_ban')||'go';
+  const ke=CAC_MAU_BAN[(CAC_MAU_BAN.indexOf(hien)+1)%CAC_MAU_BAN.length];
+  datMauBan(ke);
+}
+datMauBan(localStorage.getItem('mau_ban')||'go');
 
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
