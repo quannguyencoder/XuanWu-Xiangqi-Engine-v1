@@ -74,6 +74,8 @@ const NGON_NGU = {
     giai_thich_loi_the:'giành lợi thế rõ rệt',
     de_tu:'Dễ', vua_tu:'Vừa', kho_tu:'Khó', tien_do:'Tiến độ',
     da_giai:'Đã giải', ti_le_dung:'Tỉ lệ đúng', dong_ho:'Thời gian',
+    canh_bao_ho:'Cảnh báo nước hớ', canh_bao_ho_noi_dung:'Nước này có thể mất',
+    van_di_tiep:'Vẫn đi nước này?',
   },
   en: {
     mui_ten:'Arrow', bat:'on', tat:'off',
@@ -148,6 +150,8 @@ const NGON_NGU = {
     giai_thich_loi_the:'gains a clear advantage',
     de_tu:'Easy', vua_tu:'Medium', kho_tu:'Hard', tien_do:'Progress',
     da_giai:'Solved', ti_le_dung:'Accuracy', dong_ho:'Time',
+    canh_bao_ho:'Blunder warning', canh_bao_ho_noi_dung:'This move may lose',
+    van_di_tiep:'Play it anyway?',
   },
   zh: {
     mui_ten:'箭头', bat:'开', tat:'关',
@@ -222,5 +226,7 @@ const NGON_NGU = {
     giai_thich_loi_the:'取得明显优势',
     de_tu:'简单', vua_tu:'普通', kho_tu:'困难', tien_do:'进度',
     da_giai:'已完成', ti_le_dung:'正确率', dong_ho:'时间',
+    canh_bao_ho:'漏着警告', canh_bao_ho_noi_dung:'这步棋可能损失',
+    van_di_tiep:'仍要这样走吗？',
   },
 };

@@ -330,6 +330,9 @@
         <button onclick="bapMuiTen()" id="bMuiTen" style="flex:0 0 130px">↗ Mũi tên: bật</button>
       </div>
       <div class="hang">
+        <button onclick="bapCanhBaoHo()" id="bCanhBaoHo">⚠️ Cảnh báo nước hớ: tắt</button>
+      </div>
+      <div class="hang">
         <button onclick="luuVanRaFile()" id="bLuuFile">💾 Lưu ván đấu</button>
         <button onclick="moTaiVanTuFile()" id="bTaiFile">📂 Tải ván đấu</button>
         <input type="file" id="oTepVan" accept=".json,application/json"
@@ -548,6 +551,8 @@ function datNN(m){
   document.getElementById('bTaiFile').textContent='📂 '+T.tai_van_dau;
   document.getElementById('bMuiTen').textContent=
     '↗ '+T.mui_ten+': '+(choMuiTen?T.bat:T.tat);
+  document.getElementById('bCanhBaoHo').textContent=
+    '⚠️ '+T.canh_bao_ho+': '+(choCanhBaoHo?T.bat:T.tat);
   // mac (gia tri mac dinh): truoc day khi o chon con TRONG (lan dau vao trang),
   // trinh duyet tu chon option DAU TIEN trong danh sach ma khong bao gio bao
   // - "mucDo" dang co "de" (0,5 giay) dung dau nen may luon nghi RAT NHANH
@@ -902,9 +907,18 @@ let cheDoTrang='choi', theHienTai=null, theDaGiai=false, theChuoiDung=0;
 // gui len /api/di nhu binh thuong; dang "Giai the" thi kiem tra dung/sai voi
 // dap an thay vi choi that. Gop mot cho de bam()/batDauKeo() khong phai tu
 // biet dang o che do nao.
-function thucHienNuoc(mv){
-  if(cheDoTrang==='giai_the') xuLyNuocThe(mv);
-  else di(mv);
+async function thucHienNuoc(mv){
+  if(cheDoTrang==='giai_the'){ xuLyNuocThe(mv); return; }
+  if(choCanhBaoHo){
+    const kq=await kiemTraNuocHo(mv);
+    // Chi hoi khi mat DU LON (>=110, dung nguong "sai nghiem trong" cua
+    // chamNuoc() cho nhat quan) - tranh hoi vat vanh voi moi nuoc khong toi uu.
+    if(kq && kq.mat>=110 &&
+       !confirm(`⚠️ ${T.canh_bao_ho_noi_dung} ${kq.mat} ${T.diem_tu}.\n${T.van_di_tiep}`)){
+      chon=null; ve(); return;
+    }
+  }
+  di(mv);
 }
 
 function veCham(){
@@ -1275,6 +1289,7 @@ function theXemDapAn(){
 
 function capNhat(d){
   banCo=d.ban_co.map(h=>h.split('')); hopLe=d.nuoc_hop_le||[]; benDi=d.ben_di;
+  if(d.fen) banCoFenHienTai=d.fen;    // dung cho kiemTraNuocHo(), khong hien ra UI
   if(d.diem!==undefined) thanh(d.diem);
   veDongHo();
   const t=document.getElementById('ttVan'), minh=document.getElementById('benCam').value;
@@ -1362,6 +1377,40 @@ async function goi(duong, than, giay=45){
 let dangPhanTich=false;
 let phanTichCuoi=null;      // nho de ve lai khi doi ngon ngu
 let choMuiTen=true;         // nguoi choi tu bat/tat mui ten goi y
+// Canh bao nuoc ho: MAC DINH TAT, vi moi lan bam nuoc se doi them ~0,3-0,5s
+// (hai luot goi may chu) truoc khi nuoc duoc thuc su di - nguoi choi tu bat
+// len neu muon, khong ep ai cung phai doi.
+let choCanhBaoHo=(localStorage.getItem('canh_bao_ho')==='1');
+function bapCanhBaoHo(){
+  choCanhBaoHo=!choCanhBaoHo;
+  localStorage.setItem('canh_bao_ho', choCanhBaoHo?'1':'0');
+  document.getElementById('bCanhBaoHo').textContent=
+    '⚠️ '+T.canh_bao_ho+': '+(choCanhBaoHo?T.bat:T.tat);
+}
+// Van tam DUNG LAI (khong tao moi moi lan) de kiem tra nuoc ho, tranh phinh
+// bo nho server voi mot van moi cho MOI lan bam nuoc.
+let vanTamCanhBao=null, banCoFenHienTai=null;
+async function _vanTamCanhBaoSan(){
+  if(!vanTamCanhBao){
+    const moi=await goi('/api/van-moi',{nguoi_cam:'trang',muc_do:'de'});
+    vanTamCanhBao=moi&&moi.ma_van;
+  }
+  return vanTamCanhBao;
+}
+// Uoc luong nhanh (~0,25s+0,3s) xem nuoc dang xet co lam mat diem nhieu
+// khong, dung LAI DUNG endpoint da co (/api/lui de dat vi tri, /api/di voi
+// tu_choi:true de thu mot nuoc ma khong bi may tra loi) - khong them API moi.
+async function kiemTraNuocHo(mv){
+  if(!banCoFenHienTai) return null;
+  const vt=await _vanTamCanhBaoSan();
+  if(!vt) return null;
+  const d0=await goi('/api/lui',{ma_van:vt,so_nuoc:0,cac_nuoc:[],fen_goc:banCoFenHienTai});
+  if(!d0||d0.loi) return null;
+  const d1=await goi('/api/di',{ma_van:vt,nuoc:mv,tu_choi:true,muc_do:'de'});
+  if(!d1||d1.loi) return null;
+  const mat = d0.ben_di==='trang' ? (d0.diem-d1.diem) : (d1.diem-d0.diem);
+  return {mat: Math.round(mat)};
+}
 async function phanTich(muc){
   // Chi cho MOT yeu cau phan tich chay mot luc. Neu khong, nguoi choi di nhanh
   // se xep hang hang loat yeu cau, moi cai giu khoa engine o may chu va lam
