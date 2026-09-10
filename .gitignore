@@ -27,3 +27,6 @@ data/train_big.log
 data/sample_positions.jsonl
 engine/libxuanwu.so
 weights/sach_khai_cuoc.npz
+
+# Van da luu cua nguoi choi: du lieu ca nhan, khong dua len repo cong khai
+data/games/

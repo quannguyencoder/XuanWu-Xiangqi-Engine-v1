@@ -19,6 +19,8 @@ API duoc thiet ke de mo rong sau nay ma khong phai sua kien truc:
 import http.server
 import json
 import os
+import re
+import secrets
 import socketserver
 import sys
 import threading
@@ -37,6 +39,14 @@ from tools.collect_openings import board_to_fen, fen_to_board
 
 CONG = 8000
 MUC_DO = {"de": 0.5, "vua": 3.0, "kho": 10.0}
+
+# Van DA KET THUC duoc luu rieng ra file JSON (khong lien quan gi den _van o
+# duoi - do la ban dang choi DO trong RAM). Moi van la mot file, don gian hon
+# CSDL that va du dung cho mot may ca nhan. Ma van luon dung dinh dang
+# "<so>-<hex>" (xem _luu_van_xong) - _MA_VAN_HOP_LE dung de loc truoc khi ghep
+# vao duong dan file, tranh path traversal tu du lieu client gui len.
+THU_MUC_VAN = os.path.join(os.path.dirname(THU_MUC), "data", "games")
+_MA_VAN_HOP_LE = re.compile(r"^[0-9]+-[0-9a-f]{6}$")
 
 # Cac van dang choi, theo ma van. Giu trong bo nho vi web chi chay khi can.
 _van = {}
@@ -208,6 +218,14 @@ class May(http.server.SimpleHTTPRequestHandler):
                 return self._nap_fen(req)
             if duong == "/api/dia-chi":
                 return self._tra({"lan": _dia_chi_lan(CONG)})
+            if duong == "/api/luu-van-xong":
+                return self._luu_van_xong(req)
+            if duong == "/api/danh-sach-van":
+                return self._danh_sach_van(req)
+            if duong == "/api/xem-van":
+                return self._xem_van(req)
+            if duong == "/api/xoa-van":
+                return self._xoa_van(req)
             return self._tra({"loi": "khong co duong dan nay"}, 404)
         except Exception as e:                # tra loi ro thay vi treo trang
             return self._tra({"loi": f"{type(e).__name__}: {e}"}, 500)
@@ -421,6 +439,72 @@ class May(http.server.SimpleHTTPRequestHandler):
         if v is None:
             return self._tra({"loi": "khong tim thay van"}, 404)
         return self._tra({"diem": _cham_diem(v, req.get("giay", 0.3))})
+
+    # -- luu tru van da ket thuc (xem lai kieu chess.com) -------------------
+    # Khong dung CSDL that: moi van la mot file JSON trong data/games/. Client
+    # tu goi /api/luu-van-xong MOT LAN khi phat hien van vua ket thuc - server
+    # khong tu dong luu, vi no khong giu du lieu diem-tung-nuoc (lich_su_diem)
+    # ma chi client moi co.
+
+    def _luu_van_xong(self, req):
+        os.makedirs(THU_MUC_VAN, exist_ok=True)
+        ma = f"{int(time.time()*1000)}-{secrets.token_hex(3)}"
+        ban_ghi = {
+            "ma": ma,
+            "luc": time.time(),
+            "ten": str(req.get("ten") or "")[:40],
+            "ben_cam": req.get("ben_cam"),
+            "che_do": req.get("che_do"),
+            "muc_do": req.get("muc_do"),
+            "ket_qua": req.get("ket_qua"),
+            "ly_do": req.get("ly_do"),
+            "fen_goc": req.get("fen_goc"),
+            "lich_su": req.get("lich_su") or [],
+            "lich_su_diem": req.get("lich_su_diem") or [],
+        }
+        with open(os.path.join(THU_MUC_VAN, f"{ma}.json"), "w", encoding="utf-8") as f:
+            json.dump(ban_ghi, f, ensure_ascii=False)
+        return self._tra({"ma": ma})
+
+    def _danh_sach_van(self, req):
+        os.makedirs(THU_MUC_VAN, exist_ok=True)
+        ra = []
+        for ten_tep in os.listdir(THU_MUC_VAN):
+            if not ten_tep.endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(THU_MUC_VAN, ten_tep), encoding="utf-8") as f:
+                    d = json.load(f)
+            except Exception:
+                continue
+            tom_tat = {k: d.get(k) for k in
+                       ("ma", "luc", "ten", "ben_cam", "che_do", "muc_do",
+                        "ket_qua", "ly_do")}
+            tom_tat["so_nuoc"] = len(d.get("lich_su") or [])
+            ra.append(tom_tat)
+        ra.sort(key=lambda x: x.get("luc") or 0, reverse=True)
+        gioi_han = min(500, max(1, int(req.get("gioi_han", 200))))
+        return self._tra({"ds": ra[:gioi_han]})
+
+    def _xem_van(self, req):
+        ma = req.get("ma", "")
+        if not _MA_VAN_HOP_LE.match(ma):
+            return self._tra({"loi": "ma khong hop le"}, 400)
+        duong = os.path.join(THU_MUC_VAN, f"{ma}.json")
+        if not os.path.exists(duong):
+            return self._tra({"loi": "khong tim thay van da luu"}, 404)
+        with open(duong, encoding="utf-8") as f:
+            return self._tra(json.load(f))
+
+    def _xoa_van(self, req):
+        ma = req.get("ma", "")
+        if not _MA_VAN_HOP_LE.match(ma):
+            return self._tra({"loi": "ma khong hop le"}, 400)
+        try:
+            os.remove(os.path.join(THU_MUC_VAN, f"{ma}.json"))
+        except FileNotFoundError:
+            pass
+        return self._tra({"ok": True})
 
 
 def main():

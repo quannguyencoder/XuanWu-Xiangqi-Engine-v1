@@ -210,6 +210,22 @@
       </div>
     </div>
 
+    <div class="the" id="theXemLai" style="display:none">
+      <h2 id="tXemLai">Đang xem lại ván</h2>
+      <div id="doThiXemLai" style="margin:4px 0 10px"></div>
+      <div class="hang">
+        <button onclick="nhayXemLai(0)" id="bXlDau" style="flex:0 0 44px">⏮</button>
+        <button onclick="xemLaiLui()" id="bXlTruoc">◀ Trước</button>
+        <span id="xlChiSo" style="flex:0 0 70px;text-align:center;align-self:center;
+              color:var(--mo);font-size:13px">0/0</span>
+        <button onclick="xemLaiToi()" id="bXlSau">Sau ▶</button>
+        <button onclick="nhayXemLaiCuoi()" id="bXlCuoi" style="flex:0 0 44px">⏭</button>
+      </div>
+      <div class="hang" style="margin-top:8px">
+        <button onclick="thoatXemLai()" id="bThoatXemLai">✕ Thoát xem lại</button>
+      </div>
+    </div>
+
     <div class="the">
       <div class="diem-to"><span id="diemTo">505</span><small> / 1000</small></div>
       <div id="nhanDiem" class="nhan">Cân bằng</div>
@@ -255,6 +271,13 @@
       <div class="hang">
         <input class="fen" id="oFen" placeholder="FEN">
         <button onclick="napFen()" id="bFen" style="flex:0 0 90px">Nạp FEN</button>
+      </div>
+      <div class="hang">
+        <input id="oTen" placeholder="Tên của bạn (để lưu ván)"
+               oninput="localStorage.setItem('qisheng_ten',oTen.value)">
+      </div>
+      <div class="hang">
+        <button onclick="moLichSu()" id="bLichSu">📜 Lịch sử ván đấu</button>
       </div>
       <div class="chia" id="chiaSe"></div>
     </div>
@@ -310,6 +333,19 @@
   </div>
 </div>
 
+<div class="lop-modal" id="lopLichSu">
+  <div class="hop-modal" style="max-width:480px;max-height:82vh;
+       display:flex;flex-direction:column">
+    <h2 id="tHopLichSu" style="flex:0 0 auto">Lịch sử ván đấu</h2>
+    <div id="thongKeVan" style="flex:0 0 auto;font-size:13px;color:var(--mo);
+         margin-bottom:10px"></div>
+    <div id="dsVanDaLuu" style="flex:1 1 auto;overflow-y:auto;min-height:0"></div>
+    <div class="hang nut-hang" style="flex:0 0 auto;margin-top:12px">
+      <button onclick="dongLichSu()" id="bDongLichSu">Đóng</button>
+    </div>
+  </div>
+</div>
+
 <script src="lang.js"></script>
 <script>
 const O=72, LE=60;   // le 60 de so cot khong bi quan co (ban kinh 29,5px) che
@@ -326,6 +362,11 @@ const tuChoi=()=>document.getElementById('cheDo').value==='tu';
 const raMH=(r,c)=>xoay?[9-r,8-c]:[r,c];
 const tuMH=(r,c)=>xoay?[9-r,8-c]:[r,c];
 const kyHieu=m=>m?`${'abcdefghi'[m[1]]}${9-m[0]}${'abcdefghi'[m[3]]}${9-m[2]}`:'—';
+// Thoat ky tu HTML: ten nguoi choi la van ban NGUOI DUNG tu go, luu tren
+// server roi hien lai trong danh sach lich su - khong thoat ky tu se ho
+// XSS luu tru that (vd go "<img src=x onerror=...>" lam ten).
+const escHtml=s=>String(s??'').replace(/[&<>"']/g,
+  c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // --- Ghi nuoc di theo loi co tuong truyen thong ---
 // Cot duoc danh so tu PHIA MINH nhin sang: Do dem tu phai sang trai, Den dem
@@ -448,6 +489,21 @@ function datNN(m){
   document.getElementById('nhBenCam').textContent=T.ben_cam;
   document.getElementById('hHuy').textContent=T.huy;
   document.getElementById('hBatDau').textContent=T.bat_dau;
+  document.getElementById('oTen').placeholder=T.ten_cua_ban;
+  document.getElementById('bLichSu').textContent='📜 '+T.lich_su;
+  document.getElementById('tHopLichSu').textContent=T.lich_su;
+  document.getElementById('bDongLichSu').textContent=T.dong;
+  if(document.getElementById('lopLichSu').style.display==='flex')
+    veDanhSachVan(danhSachVanCuoi);           // doi ngon ngu luc dang mo -> ve lai
+  document.getElementById('bXlTruoc').textContent='◀ '+T.truoc_tu;
+  document.getElementById('bXlSau').textContent=T.sau_tu+' ▶';
+  document.getElementById('bThoatXemLai').textContent='✕ '+T.thoat_xem_lai;
+  if(dangXemLai){
+    document.getElementById('tXemLai').textContent=T.xem_lai_van
+      +(xemLaiBanGhi&&xemLaiBanGhi.ten?' — '+escHtml(xemLaiBanGhi.ten):'');
+  }else{
+    document.getElementById('tXemLai').textContent=T.xem_lai_van;
+  }
   localStorage.setItem('nn',m);
   veLuat(); veCham(); veDs(); veBiAn();
   // Ve lai o phan tich bang ngon ngu moi. Khong co dong nay thi noi dung cu
@@ -646,6 +702,7 @@ function bay(mv, xong){
 
 function bam(r,c){
   if(boQuaClickKeTiep){ boQuaClickKeTiep=false; return; }   // vua xu ly xong bang keo-tha
+  if(dangXemLai) return;
   if(!van) return;
   if(dangCho&&!tuChoi()) return;
   if(chon){
@@ -665,6 +722,7 @@ function bam(r,c){
 // bam-chon-roi-bam-o-dich cu van chay dung, khong bi thay doi.
 function batDauKeo(e,r,c){
   if(e.button!==undefined && e.button!==0) return;      // chi nut trai chuot
+  if(dangXemLai) return;
   if(!van || (dangCho&&!tuChoi())) return;
   // Neu da chon mot quan va day la NUOC AN hop le tu quan do, day la buoc bam
   // de an quan - de nguyen cho click thuong xu ly, khong cuop lam keo-tha.
@@ -739,6 +797,12 @@ let cham={trang:null, den:null};      // danh gia nuoc gan nhat cua tung ben
 // {ben, truoc, sau, idx} - idx la vi tri trong lichSu/banTruocNuoc de tra
 // nguoc lai ban co truoc nuoc do khi can ghi ky hieu truyen thong.
 let lichSuDiem=[];
+// Chan luu van xong LAP LAI: khi van da luu xong 1 lan (hoac tai lai trang
+// tren mot van da luu roi), khong luu them ban trung. Duoc luu chung vao
+// localStorage qua luuVan() de song sot qua lan tai lai trang.
+let daLuuVanXong=false;
+// --- Xem lai van cu ---
+let dangXemLai=false, xemLaiBanGhi=null, xemLaiChiSo=0, xemLaiVanTam=null;
 
 function veCham(){
   const o=(ben,ten)=>{
@@ -794,6 +858,140 @@ function veTongKet(){
   e.style.display='block';
 }
 
+// --- Luu ván đã xong lên server, kiểu chess.com --------------------------
+// Chỉ gọi MỘT LẦN cho mỗi ván (chặn bằng daLuuVanXong, persist qua luuVan())
+// vì trang có thể re-render lại trạng thái kết thúc nhiều lần (vd tải lại
+// trang trên một ván đã xong từ trước).
+function guiVanDaXongLenServer(d){
+  if(daLuuVanXong || !lichSu.length) return;
+  daLuuVanXong=true; luuVan();
+  const ten=(document.getElementById('oTen').value||'').trim();
+  goi('/api/luu-van-xong',{
+    ten, ben_cam:document.getElementById('benCam').value,
+    che_do:document.getElementById('cheDo').value,
+    muc_do:document.getElementById('mucDo').value,
+    ket_qua:d.trang_thai, ly_do:d.ly_do||'',
+    fen_goc: vanGoc.kieu==='fen' ? vanGoc.fen : null,
+    lich_su:lichSu, lich_su_diem:lichSuDiem,
+  }).catch(()=>{});
+}
+
+// --- Hộp thoại "Lịch sử ván đấu" ------------------------------------------
+async function moLichSu(){
+  const d=await goi('/api/danh-sach-van',{});
+  veDanhSachVan((d&&d.ds)||[]);
+  document.getElementById('lopLichSu').style.display='flex';
+}
+function dongLichSu(){
+  document.getElementById('lopLichSu').style.display='none';
+}
+// Dien giai ket_qua cua MOT van da luu thanh chu, dung dung logic capNhat()
+// dang dung cho van dang choi de nhat quan (Ban thang/May thang/Do thang/...).
+function _ketQuaChu(v){
+  if(v.ket_qua==='hoa') return T.hoa;
+  const ai={trang_thang:'trang',den_thang:'den'}[v.ket_qua];
+  if(!ai) return v.ket_qua||'—';
+  if(v.che_do==='tu') return ai==='trang'?T.do_thang:T.den_thang;
+  return ai===v.ben_cam ? T.ban_thang : T.may_thang;
+}
+function veDanhSachVan(ds){
+  danhSachVanCuoi=ds;
+  const ten=(document.getElementById('oTen').value||'').trim();
+  const cuaToi = ten ? ds.filter(v=>v.ten===ten) : ds;
+  const thang=cuaToi.filter(v=>_ketQuaChu(v)===T.ban_thang).length;
+  const thua=cuaToi.filter(v=>_ketQuaChu(v)===T.may_thang).length;
+  const hoa=cuaToi.filter(v=>v.ket_qua==='hoa').length;
+  document.getElementById('thongKeVan').textContent = ten
+    ? `${escHtml(ten)}: ${cuaToi.length} ${T.van_tu} — ${thang} ${T.thang_tu}, `
+      +`${thua} ${T.thua_tu}, ${hoa} ${T.hoa.toLowerCase()}`
+    : `${ds.length} ${T.van_tu}`;
+  const e=document.getElementById('dsVanDaLuu');
+  if(!ds.length){ e.innerHTML=`<div class="mo2" style="padding:10px 0">${T.chua_co_van}</div>`; return; }
+  const ngonNgu = nn==='zh'?'zh-CN':nn==='en'?'en-US':'vi-VN';
+  e.innerHTML = ds.map(v=>{
+    const ngay=new Date((v.luc||0)*1000).toLocaleString(ngonNgu,
+      {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;
+         border-bottom:1px solid var(--vien);font-size:13px">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600">${v.ten?escHtml(v.ten)+' · ':''}${escHtml(_ketQuaChu(v))}</div>
+        <div style="color:var(--mo);font-size:11.5px">${ngay} · ${v.so_nuoc||0} ${T.so_nuoc_ngan}</div>
+      </div>
+      <button onclick="xemLai('${v.ma}')" style="flex:0 0 auto;padding:6px 10px">${T.xem_lai}</button>
+      <button onclick="xoaVanDaLuu('${v.ma}')" style="flex:0 0 auto;padding:6px 8px" title="${T.xoa}">🗑</button>
+    </div>`;
+  }).join('');
+}
+let danhSachVanCuoi=[];
+async function xoaVanDaLuu(ma){
+  await goi('/api/xoa-van',{ma});
+  moLichSu();
+}
+
+// --- Xem lại một ván đã lưu ------------------------------------------------
+// Dung lai DUNG co che phat lai nuoc di da xay cho khoi phuc sau F5
+// (/api/lui voi so_nuoc + fen_goc) - khong viet rieng logic di quan o JS,
+// tranh hai bo code co the lech nhau khi luat thay doi sau nay.
+async function xemLai(ma){
+  const d=await goi('/api/xem-van',{ma});
+  if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'không mở được ván'); return; }
+  dongLichSu();
+  xemLaiBanGhi=d;
+  const moi = d.fen_goc
+    ? await goi('/api/nap-fen',{fen:d.fen_goc})
+    : await goi('/api/van-moi',{nguoi_cam:'trang',muc_do:'de'});
+  if(!moi||moi.loi) return;
+  xemLaiVanTam=moi.ma_van;
+  dangXemLai=true; chon=null; goiY=null;
+  document.getElementById('theXemLai').style.display='block';
+  document.getElementById('tXemLai').textContent=T.xem_lai_van
+    +(d.ten?' — '+escHtml(d.ten):'');
+  await nhayXemLai((d.lich_su||[]).length);   // mac dinh hien the co CUOI ván
+}
+async function veXemLai(){
+  const tong=(xemLaiBanGhi.lich_su||[]).length;
+  const d=await goi('/api/lui',{ma_van:xemLaiVanTam, so_nuoc:tong-xemLaiChiSo,
+    cac_nuoc:xemLaiBanGhi.lich_su, fen_goc:xemLaiBanGhi.fen_goc||undefined});
+  if(!d||d.loi) return;
+  banCo=d.ban_co.map(h=>h.split('')); hopLe=[]; benDi=d.ben_di; chon=null;
+  vuaDi = xemLaiChiSo>0 ? xemLaiBanGhi.lich_su[xemLaiChiSo-1] : null;
+  ve(); veMuiTen();
+  if(d.diem!==undefined) thanh(d.diem);
+  document.getElementById('xlChiSo').textContent=`${xemLaiChiSo}/${tong}`;
+  document.getElementById('vuaDiTxt').textContent = vuaDi?kyHieu(vuaDi):'—';
+  veDoThiXemLai();
+}
+function nhayXemLai(i){
+  xemLaiChiSo=Math.max(0,Math.min((xemLaiBanGhi.lich_su||[]).length,i));
+  return veXemLai();
+}
+function xemLaiLui(){ nhayXemLai(xemLaiChiSo-1); }
+function xemLaiToi(){ nhayXemLai(xemLaiChiSo+1); }
+function nhayXemLaiCuoi(){ nhayXemLai((xemLaiBanGhi.lich_su||[]).length); }
+function thoatXemLai(){
+  dangXemLai=false; xemLaiBanGhi=null; xemLaiVanTam=null;
+  document.getElementById('theXemLai').style.display='none';
+  khoiPhucHoacMoi();      // dua ban co ve dung van dang choi (da luu san)
+}
+// Do thi duong danh gia theo tung nuoc - ve tay bang SVG (giong cach ban co
+// va mui ten trong trang nay deu tu ve, khong dung thu vien bieu do ngoai).
+function veDoThiXemLai(){
+  const cont=document.getElementById('doThiXemLai');
+  const diem=(xemLaiBanGhi.lich_su_diem||[]).slice().sort((a,b)=>a.idx-b.idx);
+  if(diem.length<2){ cont.innerHTML=''; return; }
+  const W=260,H=64,P=4;
+  const xCua=i=>P+(W-2*P)*i/(diem.length-1);
+  const yCua=d=>P+(H-2*P)*(1-Math.max(0,Math.min(1000,d))/1000);
+  const duong=diem.map((p,i)=>`${i===0?'M':'L'}${xCua(i).toFixed(1)},${yCua(p.sau).toFixed(1)}`).join(' ');
+  let iHienTai=-1;
+  for(let i=0;i<diem.length;i++) if(diem[i].idx+1<=xemLaiChiSo) iHienTai=i;
+  const cham=iHienTai>=0
+    ?`<circle cx="${xCua(iHienTai)}" cy="${yCua(diem[iHienTai].sau)}" r="3" fill="#e74c3c"/>`:'';
+  cont.innerHTML=`<svg width="${W}" height="${H}" style="display:block">
+    <line x1="${P}" y1="${yCua(500)}" x2="${W-P}" y2="${yCua(500)}" stroke="var(--vien)" stroke-width="1"/>
+    <path d="${duong}" fill="none" stroke="#4a9eff" stroke-width="1.6"/>${cham}</svg>`;
+}
+
 function capNhat(d){
   banCo=d.ban_co.map(h=>h.split('')); hopLe=d.nuoc_hop_le||[]; benDi=d.ben_di;
   if(d.fen) document.getElementById('oFen').value=d.fen;
@@ -810,6 +1008,7 @@ function capNhat(d){
             : (tuChoi()||ai2===minh2 ? (TEP.win?'win':'het')
                                      : (TEP.thua?'thua':'het')));
     veTongKet();                        // ván đã xong -> hiện tổng kết
+    guiVanDaXongLenServer(d);           // luu lai de xem trong Lich su
   }else{
     t.innerHTML = tuChoi()
       ? `${T.luot_cua} <b>${d.ben_di==='trang'?T.do_:T.den_}</b>`
@@ -921,6 +1120,7 @@ let vanGoc={kieu:'nuoc'};
 function luuVan(){
   try{
     localStorage.setItem(KHOA_LUU, JSON.stringify({...vanGoc, lichSu, lichSuDiem,
+      daLuuVanXong,
       benCam:document.getElementById('benCam').value,
       cheDo:document.getElementById('cheDo').value,
       mucDo:document.getElementById('mucDo').value, xoay}));
@@ -964,6 +1164,7 @@ async function khoiPhucHoacMoi(){
     vanGoc = luu.kieu==='fen' ? {kieu:'fen',fen:luu.fen} : {kieu:'nuoc'};
     van=moi.ma_van; lichSu=(luu.lichSu||[]).slice(); banTruocNuoc=[];
     lichSuDiem=Array.isArray(luu.lichSuDiem)?luu.lichSuDiem.slice():[];
+    daLuuVanXong=!!luu.daLuuVanXong;
     quanBiAn=suyRaBiAn(d.ban_co.map(h=>h.split('')));
     vuaDi=lichSu.length?lichSu[lichSu.length-1]:null; diemTruoc=505;
     chon=null; goiY=null; phien++;
@@ -1009,6 +1210,9 @@ document.getElementById('hCheDo').addEventListener('change',()=>{
 document.getElementById('lopVanMoi').addEventListener('click',e=>{
   if(e.target.id==='lopVanMoi') dongVanMoi();   // bam ra ngoai hop thi dong
 });
+document.getElementById('lopLichSu').addEventListener('click',e=>{
+  if(e.target.id==='lopLichSu') dongLichSu();
+});
 
 async function vanMoi(){
   const ben=document.getElementById('benCam').value;
@@ -1017,7 +1221,7 @@ async function vanMoi(){
     muc_do:document.getElementById('mucDo').value});
   if(!d||d.loi){ document.getElementById('ttVan').textContent='⚠ '+((d&&d.loi)||'lỗi mạng'); return; }
   van=d.ma_van; chon=null; goiY=null; lichSu=[]; lichSuDiem=[]; quanBiAn=[]; banTruocNuoc=[]; phien++;
-  vanGoc={kieu:'nuoc'};
+  vanGoc={kieu:'nuoc'}; daLuuVanXong=false;
   veBiAn();
   vuaDi=d.nuoc_may||null; diemTruoc=505;
   if(d.nuoc_may) lichSu.push(d.nuoc_may);
@@ -1104,7 +1308,7 @@ async function _di(mv){
 
 // Chi VE MUI TEN goi y, khong tu di - nguoi choi tu quyet dinh co theo hay khong
 async function xinGoiY(){
-  if(!van||dangCho) return;
+  if(!van||dangCho||dangXemLai) return;
   const p=++phien;
   document.getElementById('nuocTot').textContent='…';
   const d=await goi('/api/goi-y',{ma_van:van,
@@ -1119,7 +1323,7 @@ async function xinGoiY(){
 }
 
 async function lui(){
-  if(!van||dangCho) return;
+  if(!van||dangCho||dangXemLai) return;
   dangCho=true;
   const bo = 1;      // luon lui MOT nuoc, bam nhieu lan de lui tiep
   const nuocLui=lichSu[lichSu.length-1];   // nuoc sap bi lui, de choi hoat hinh bay nguoc
@@ -1182,7 +1386,7 @@ async function napFen(){
   van=d.ma_van; chon=null; goiY=null; lichSu=[]; lichSuDiem=[]; quanBiAn=[]; banTruocNuoc=[]; vuaDi=null; phien++;
   document.getElementById('ds').innerHTML='';
   veBiAn();
-  vanGoc={kieu:'fen',fen:f};
+  vanGoc={kieu:'fen',fen:f}; daLuuVanXong=false;
   capNhat(d);
   luuVan();
   phanTich();
@@ -1234,17 +1438,23 @@ const doiNen=()=>datNen(
 
 datNen(localStorage.getItem('nen')||'toi');
 datNN(localStorage.getItem('nn')||'vi');
+document.getElementById('oTen').value=localStorage.getItem('qisheng_ten')||'';
 veBan();
 khoiPhucHoacMoi();
 
-// Mui ten TRAI = lui mot nuoc, giong nut "Lui". Bo qua khi dang go trong o
-// nhap (FEN) hoac chon trong danh sach, de khong pha thao tac go chu binh thuong.
+// Mui ten TRAI/PHAI: dang xem lai thi di chuyen qua tung nuoc; dang choi
+// binh thuong thi TRAI = lui mot nuoc, giong nut "Lui". Bo qua khi dang go
+// trong o nhap (FEN/ten) hoac chon trong danh sach.
 document.addEventListener('keydown', e=>{
-  if(e.key!=='ArrowLeft') return;
+  if(e.key!=='ArrowLeft' && e.key!=='ArrowRight') return;
   const te=(document.activeElement||{}).tagName;
   if(te==='INPUT'||te==='SELECT'||te==='TEXTAREA') return;
   e.preventDefault();
-  lui();
+  if(dangXemLai){
+    if(e.key==='ArrowLeft') xemLaiLui(); else xemLaiToi();
+    return;
+  }
+  if(e.key==='ArrowLeft') lui();
 });
 
 // Dang ky service worker RONG (xem sw.js) - chi de Chrome (nhat la Android)
