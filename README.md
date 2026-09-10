@@ -28,6 +28,7 @@ No chess library. No borrowed engine. Every rule, every search, every evaluation
 
 | Section | |
 |---|---|
+| [In Plain English](#in-plain-english) | No chess or programming background needed |
 | [What It Is](#what-it-is) | The idea in 30 seconds |
 | [How It Thinks](#how-it-thinks) | Architecture at a glance |
 | [Strengths](#strengths) | What it already does well |
@@ -36,6 +37,48 @@ No chess library. No borrowed engine. Every rule, every search, every evaluation
 | [Try It](#try-it) | Run it yourself |
 
 ---
+
+## In Plain English
+
+**What this is.** A computer program that plays Xiangqi (Chinese chess) — you make a move, it
+thinks, it makes a move back. It was written from nothing: no chess engine was copied or wrapped,
+every rule of the game and every line of search code was written by hand for this project.
+
+**How it decides what to play, without the jargon.** For any given position, the program does
+roughly what a strong human player does, just faster and more exhaustively: it imagines a move,
+imagines how the opponent would answer, imagines the reply to that, and so on several moves deep —
+then walks back up that tree of "what if" and picks the move that leads to the position it likes
+best a few moves from now. "Likes best" is decided by a scorer that is part hand-written rules
+(a chariot is worth more than a soldier, an active piece is worth more than a passive one) and
+part a small neural network that learned patterns from 16 million positions graded by a much
+stronger existing engine (Pikafish) — the network was never allowed to grade its own training
+data, only to learn from an outside judge.
+
+**How to actually use it — no setup beyond having Python installed:**
+
+```bash
+python3 web/server.py
+```
+
+This starts a local web app and opens a chessboard in your browser (nothing leaves your computer,
+no account needed). From there:
+
+- **Play** — click a piece, click where it should go, or drag it; the AI replies. A difficulty
+  slider controls how long it thinks, and a hint button draws an arrow for its recommended move.
+- **Solve puzzles** ("Giải thế") — tactical positions mined from the same 16 million training
+  positions, so practicing doesn't cost any extra computation.
+- **Review a finished game** — every move gets graded (Good / Inaccuracy / Mistake / Blunder)
+  with an accuracy percentage per side, similar to a chess.com game review.
+- Interface is in Vietnamese by default, with English and Chinese also available.
+
+If you'd rather skip the web app and just ask the engine about one position from a terminal:
+
+```bash
+python3 main.py "<FEN>" --depth 2    # or omit the FEN to analyse the starting position
+```
+
+It prints a single number from 0 to 1000 (how good the position is for Red) and the move it
+would play — see [What It Is](#what-it-is) below for what that number means.
 
 ## What It Is
 
@@ -141,19 +184,24 @@ because at this sample size a single number would overstate what is known.
 ```mermaid
 flowchart LR
     A["✅ Rules<br/>+ perft"] --> B["✅ Search<br/>upgrades"] --> C["✅ 16M<br/>positions"]
-    C --> D["✅ Neural<br/>evaluation"] --> E["✅ Measured<br/>Elo"] --> F["◻ Depth 7<br/>search"] --> G["◻ Web<br/>board"]
+    C --> D["✅ Neural<br/>evaluation"] --> E["✅ Measured<br/>Elo"] --> F["◻ Depth 7<br/>search"] --> G["✅ Web<br/>board"]
     style A fill:#c8e6c9,stroke:#2e7d32
     style B fill:#c8e6c9,stroke:#2e7d32
     style C fill:#c8e6c9,stroke:#2e7d32
+    style D fill:#c8e6c9,stroke:#2e7d32
+    style E fill:#c8e6c9,stroke:#2e7d32
+    style G fill:#c8e6c9,stroke:#2e7d32
 ```
 
-The web board is the finish line: an interactive position, a live evaluation bar, and an arrow
-pointing at the move XuanWu would play.
+The web board shipped: an interactive position, a live evaluation bar, an arrow pointing at the
+move XuanWu would play, a puzzle mode, and a post-game review screen — see
+[In Plain English](#in-plain-english) for how to run it. Deeper search remains the open item.
 
 ## Try It
 
 ```bash
-python3 main.py                       # analyse the opening position
+python3 web/server.py                 # play against it in your browser
+python3 main.py                       # analyse the opening position from a terminal
 python3 main.py "<FEN>" --depth 2     # analyse any position
 python3 tests/test_engine.py          # verify the rules yourself
 ```
